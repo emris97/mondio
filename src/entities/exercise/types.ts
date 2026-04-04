@@ -21,6 +21,8 @@ export type PenaltyRule = {
   /** per-unit penalty (e.g. per meter, per second) */
   perUnit?: boolean
   unitLabel?: string
+  /** Штраф бинарный (обнуляет или фиксированно снимает) — UI рендерит checkbox */
+  binary?: boolean
 }
 
 export type ExerciseDefinition = {

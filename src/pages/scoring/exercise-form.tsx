@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -81,13 +82,20 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
               <div className="grid gap-2 sm:grid-cols-2">
                 {definition.penaltyTable.map((rule) => (
                   <div key={rule.id} className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={getPenaltyCount(rule.id)}
-                      onChange={(e) => updatePenalty(rule.id, Math.max(Number(e.target.value) || 0, 0))}
-                      className="h-8 w-16 text-center"
-                    />
+                    {rule.binary ? (
+                      <Checkbox
+                        checked={getPenaltyCount(rule.id) > 0}
+                        onCheckedChange={(checked) => updatePenalty(rule.id, checked ? 1 : 0)}
+                      />
+                    ) : (
+                      <Input
+                        type="number"
+                        min={0}
+                        value={getPenaltyCount(rule.id)}
+                        onChange={(e) => updatePenalty(rule.id, Math.max(Number(e.target.value) || 0, 0))}
+                        className="h-8 w-16 text-center"
+                      />
+                    )}
                     <span className="text-xs text-muted-foreground leading-tight">
                       {rule.description}
                       <span className="font-medium text-foreground"> (−{rule.points}{rule.perUnit ? `/${rule.unitLabel}` : ''})</span>
