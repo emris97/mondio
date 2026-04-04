@@ -18,11 +18,17 @@ export type PenaltyRule = {
   id: string
   description: string
   points: number
+  /** Баллы, отличающиеся по уровню (приоритет над `points`) */
+  pointsByLevel?: Partial<Record<CompetitionLevel, number>>
   /** per-unit penalty (e.g. per meter, per second) */
   perUnit?: boolean
   unitLabel?: string
   /** Штраф бинарный (обнуляет или фиксированно снимает) — UI рендерит checkbox */
   binary?: boolean
+}
+
+export function getPenaltyPoints(rule: PenaltyRule, level: CompetitionLevel): number {
+  return rule.pointsByLevel?.[level] ?? rule.points
 }
 
 export type ExerciseDefinition = {

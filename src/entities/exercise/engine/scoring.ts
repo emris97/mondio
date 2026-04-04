@@ -1,5 +1,5 @@
 import type { CompetitionLevel, ExerciseGroup } from '@/shared/types'
-import type { ExerciseDefinition } from '../types'
+import { getPenaltyPoints, type ExerciseDefinition } from '../types'
 import type {
   RawExerciseInput,
   ExerciseScore,
@@ -27,7 +27,7 @@ export function calculateExerciseScore(
   const penaltyTotal = input.penalties.reduce((sum, entry) => {
     const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
     if (!rule) return sum
-    return sum + rule.points * entry.count
+    return sum + getPenaltyPoints(rule, level) * entry.count
   }, 0)
 
   const scoreAfterPenalties = Math.max(rawScore - penaltyTotal, 0)

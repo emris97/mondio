@@ -94,9 +94,9 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'total', label: 'Отказ от лакомства', maxScore: level === 1 ? 5 : 10, fixed: true },
     ],
     penaltyTable: [
-      { id: 'eat', description: 'Лижет/ест/берёт лакомство', points: 0 },
+      { id: 'eat', description: 'Лижет/ест/берёт лакомство', points: 10, pointsByLevel: { 1: 5 }, binary: true },
       { id: 'moveAway', description: 'Отходит от лакомства, за метр', points: 1, perUnit: true, unitLabel: 'м' },
-      { id: 'handlerIntervenes', description: 'Проводник вмешивается', points: 0 },
+      { id: 'handlerIntervenes', description: 'Проводник вмешивается', points: 10, pointsByLevel: { 1: 5 }, binary: true },
     ],
   },
   {
@@ -289,8 +289,8 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'total', label: 'Охрана вещи', maxScore: 30, fixed: true },
     ],
     penaltyTable: [
-      { id: 'biteInnerOk', description: 'Кусает во внутреннем круге до касания', points: 0 },
-      { id: 'draggedInner', description: 'Увлечена к границе круга, но не за', points: 0 },
+      { id: 'biteInnerOk', description: 'Кусает во внутреннем круге до касания', points: 30, binary: true },
+      { id: 'draggedInner', description: 'Увлечена к границе круга, но не за', points: 30, binary: true },
       { id: 'draggedOuterPerMeter', description: 'Увлечена за круг, за метр', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'draggedBeyond5m', description: 'Увлечена за 5 м круг', points: 15 },
       { id: 'draggedBeyond5mNoRelease', description: 'За 5 м и не отпускает 10 сек', points: 30, binary: true },
