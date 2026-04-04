@@ -1,0 +1,32 @@
+import type { CompetitionLevel, ExerciseGroup, ExerciseId } from '@/shared/types'
+
+export type JumpParams = {
+  wallHeight?: 1.8 | 1.9 | 2.0 | 2.1 | 2.2 | 2.3
+  longJumpLength?: 3.0 | 3.5 | 4.0
+  palisadeHeight?: 1.0 | 1.1 | 1.2
+}
+
+export type ScoringComponent = {
+  id: string
+  label: string
+  maxScore: number
+}
+
+export type PenaltyRule = {
+  id: string
+  description: string
+  points: number
+  /** per-unit penalty (e.g. per meter, per second) */
+  perUnit?: boolean
+  unitLabel?: string
+}
+
+export type ExerciseDefinition = {
+  id: ExerciseId
+  name: string
+  group: ExerciseGroup
+  levels: CompetitionLevel[]
+  getMaxScore: (level: CompetitionLevel, params?: JumpParams) => number
+  scoringBreakdown: (level: CompetitionLevel) => ScoringComponent[]
+  penaltyTable: PenaltyRule[]
+}

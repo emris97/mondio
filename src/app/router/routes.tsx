@@ -1,0 +1,65 @@
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from '@tanstack/react-router'
+import { DashboardPage } from '@/pages/dashboard'
+import { CompetitionPage } from '@/pages/competition'
+import { ScoringPage } from '@/pages/scoring'
+import { ResultsPage } from '@/pages/results'
+import { SettingsPage } from '@/pages/settings'
+
+const rootRoute = createRootRoute({
+  component: () => (
+    <div className="min-h-screen bg-background text-foreground">
+      <Outlet />
+    </div>
+  ),
+})
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: DashboardPage,
+})
+
+const competitionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/competition/$id',
+  component: CompetitionPage,
+})
+
+const scoringRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/competition/$id/participant/$pid',
+  component: ScoringPage,
+})
+
+const resultsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/competition/$id/results',
+  component: ResultsPage,
+})
+
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsPage,
+})
+
+const routeTree = rootRoute.addChildren([
+  dashboardRoute,
+  competitionRoute,
+  scoringRoute,
+  resultsRoute,
+  settingsRoute,
+])
+
+export const router = createRouter({ routeTree })
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
+}
