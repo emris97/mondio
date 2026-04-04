@@ -4,9 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCreateCompetition } from '@/entities/competition/model/queries'
-import type { CompetitionLevel } from '@/shared/types'
 
 type Props = {
   open: boolean
@@ -17,14 +15,13 @@ export function CreateCompetitionDialog({ open, onOpenChange }: Props) {
   const [name, setName] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [location, setLocation] = useState('')
-  const [level, setLevel] = useState<CompetitionLevel>(1)
   const createCompetition = useCreateCompetition()
   const navigate = useNavigate()
 
   const handleSubmit = () => {
     if (!name.trim()) return
     createCompetition.mutate(
-      { name: name.trim(), date, location: location.trim(), level },
+      { name: name.trim(), date, location: location.trim() },
       {
         onSuccess: (competition) => {
           onOpenChange(false)
@@ -54,19 +51,6 @@ export function CreateCompetitionDialog({ open, onOpenChange }: Props) {
           <div className="grid gap-2">
             <Label htmlFor="location">Место</Label>
             <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Москва" />
-          </div>
-          <div className="grid gap-2">
-            <Label>Уровень</Label>
-            <Select value={String(level)} onValueChange={(v) => setLevel(Number(v) as CompetitionLevel)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Уровень I (200 баллов)</SelectItem>
-                <SelectItem value="2">Уровень II (300 баллов)</SelectItem>
-                <SelectItem value="3">Уровень III (400 баллов)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>

@@ -2,12 +2,9 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useCompetitions, useDeleteCompetition } from '@/entities/competition/model/queries'
 import { CreateCompetitionDialog } from './create-competition-dialog'
 import { ImportExportButtons } from './import-export'
-
-const levelLabels = { 1: 'Уровень I', 2: 'Уровень II', 3: 'Уровень III' } as const
 
 export function DashboardPage() {
   const { data: competitions = [], isLoading } = useCompetitions()
@@ -53,7 +50,6 @@ export function DashboardPage() {
                   {c.location} · {new Date(c.date).toLocaleDateString('ru-RU')}
                 </CardDescription>
               </div>
-              <Badge variant="secondary">{levelLabels[c.level]}</Badge>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">

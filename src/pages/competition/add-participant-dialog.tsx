@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAddParticipant } from '@/entities/participant/model/queries'
+import type { CompetitionLevel } from '@/shared/types'
 
 type Props = {
   open: boolean
@@ -18,6 +20,7 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
   const [dogName, setDogName] = useState('')
   const [breed, setBreed] = useState('')
   const [regNumber, setRegNumber] = useState('')
+  const [level, setLevel] = useState<CompetitionLevel>(1)
   const addParticipant = useAddParticipant()
 
   const reset = () => {
@@ -26,6 +29,7 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
     setDogName('')
     setBreed('')
     setRegNumber('')
+    setLevel(1)
   }
 
   const handleSubmit = () => {
@@ -34,6 +38,7 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
       {
         competitionId,
         startOrder: nextOrder,
+        level,
         handler: { name: handlerName.trim(), country: country.trim() },
         dog: { name: dogName.trim(), breed: breed.trim(), registrationNumber: regNumber.trim() },
       },
@@ -72,6 +77,19 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
           <div className="grid gap-2">
             <Label htmlFor="regNumber">Рег. номер</Label>
             <Input id="regNumber" value={regNumber} onChange={(e) => setRegNumber(e.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label>Уровень</Label>
+            <Select value={String(level)} onValueChange={(v) => setLevel(Number(v) as CompetitionLevel)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Уровень I (200 баллов)</SelectItem>
+                <SelectItem value="2">Уровень II (300 баллов)</SelectItem>
+                <SelectItem value="3">Уровень III (400 баллов)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

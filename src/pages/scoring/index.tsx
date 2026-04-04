@@ -26,7 +26,7 @@ export function ScoringPage() {
   const { data: scoreRecord } = useParticipantScore(pid)
   const saveScore = useSaveScore()
 
-  const level = competition?.level ?? 1
+  const level = participant?.level ?? 1
 
   const { inputs, updateInput } = useAutoSave({
     level,

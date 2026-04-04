@@ -11,6 +11,54 @@ import { getExerciseDefinition } from '@/entities/exercise/config'
 import { calculateExerciseScore, calculateCompetitionTotal, rankParticipants } from '@/entities/exercise/engine'
 import type { ParticipantResult, RankedEntry } from '@/entities/score/types'
 import type { Participant } from '@/entities/participant/types'
+import type { CompetitionLevel } from '@/shared/types'
+
+const levelLabels: Record<CompetitionLevel, string> = { 1: 'I', 2: 'II', 3: 'III' }
+
+type RankedWithParticipant = RankedEntry & { participant: Participant }
+
+function ResultsTable({ entries }: { entries: RankedWithParticipant[] }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-16">Место</TableHead>
+          <TableHead>Проводник</TableHead>
+          <TableHead>Собака</TableHead>
+          <TableHead className="text-center">Послушание</TableHead>
+          <TableHead className="text-center">Прыжки</TableHead>
+          <TableHead className="text-center">Хватка</TableHead>
+          <TableHead className="text-right">Итого</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {entries.map((entry) => (
+          <TableRow key={entry.participantId}>
+            <TableCell>
+              <Badge variant={entry.rank <= 3 ? 'default' : 'secondary'}>
+                {entry.rank}
+              </Badge>
+            </TableCell>
+            <TableCell className="font-medium">{entry.participant.handler.name}</TableCell>
+            <TableCell>{entry.participant.dog.name}</TableCell>
+            <TableCell className="text-center">
+              {entry.total.obedience.total}/{entry.total.obedience.maxTotal}
+            </TableCell>
+            <TableCell className="text-center">
+              {entry.total.jumps.total}/{entry.total.jumps.maxTotal}
+            </TableCell>
+            <TableCell className="text-center">
+              {entry.total.bite.total}/{entry.total.bite.maxTotal}
+            </TableCell>
+            <TableCell className="text-right font-bold text-lg">
+              {entry.total.grandTotal}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
 
 export function ResultsPage() {
   const { id } = useParams({ from: '/competition/$id/results' })
@@ -18,10 +66,17 @@ export function ResultsPage() {
   const { data: participants = [] } = useParticipantsByCompetition(id)
   const { data: scoreRecords = [] } = useScoresByCompetition(id)
 
-  const level = competition?.level ?? 1
+  const rankedByLevel = useMemo(() => {
+    const participantMap = new Map(participants.map((p) => [p.id, p]))
 
-  const ranked: (RankedEntry & { participant: Participant })[] = useMemo(() => {
-    const results: ParticipantResult[] = scoreRecords.map((record) => {
+    const resultsByLevel = new Map<CompetitionLevel, ParticipantResult[]>()
+
+    for (const record of scoreRecords) {
+      const participant = participantMap.get(record.participantId)
+      if (!participant) continue
+
+      const level = participant.level
+
       const scores = record.inputs
         .map((input) => {
           const def = getExerciseDefinition(input.exerciseId)
@@ -30,21 +85,34 @@ export function ResultsPage() {
         })
         .filter(Boolean)
 
-      return {
+      const result: ParticipantResult = {
         participantId: record.participantId,
         total: calculateCompetitionTotal(scores.filter((s) => s !== null), level),
       }
-    })
 
-    const rankedEntries = rankParticipants(results)
+      const existing = resultsByLevel.get(level) ?? []
+      existing.push(result)
+      resultsByLevel.set(level, existing)
+    }
 
-    return rankedEntries
-      .map((entry) => ({
-        ...entry,
-        participant: participants.find((p) => p.id === entry.participantId)!,
-      }))
-      .filter((e) => e.participant)
-  }, [scoreRecords, participants, level])
+    const grouped: { level: CompetitionLevel; entries: RankedWithParticipant[] }[] = []
+
+    for (const level of [1, 2, 3] as CompetitionLevel[]) {
+      const results = resultsByLevel.get(level)
+      if (!results?.length) continue
+
+      const rankedEntries = rankParticipants(results)
+        .map((entry) => ({
+          ...entry,
+          participant: participantMap.get(entry.participantId)!,
+        }))
+        .filter((e) => e.participant)
+
+      grouped.push({ level, entries: rankedEntries })
+    }
+
+    return grouped
+  }, [scoreRecords, participants])
 
   if (!competition) {
     return (
@@ -64,57 +132,28 @@ export function ResultsPage() {
 
       <h1 className="text-3xl font-bold tracking-tight mb-6">Результаты</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Standings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {ranked.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
+      {rankedByLevel.length === 0 ? (
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-muted-foreground text-center">
               Нет данных об оценках. Введите оценки участникам.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Место</TableHead>
-                  <TableHead>Проводник</TableHead>
-                  <TableHead>Собака</TableHead>
-                  <TableHead className="text-center">Послушание</TableHead>
-                  <TableHead className="text-center">Прыжки</TableHead>
-                  <TableHead className="text-center">Хватка</TableHead>
-                  <TableHead className="text-right">Итого</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ranked.map((entry) => (
-                  <TableRow key={entry.participantId}>
-                    <TableCell>
-                      <Badge variant={entry.rank <= 3 ? 'default' : 'secondary'}>
-                        {entry.rank}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{entry.participant.handler.name}</TableCell>
-                    <TableCell>{entry.participant.dog.name}</TableCell>
-                    <TableCell className="text-center">
-                      {entry.total.obedience.total}/{entry.total.obedience.maxTotal}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {entry.total.jumps.total}/{entry.total.jumps.maxTotal}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {entry.total.bite.total}/{entry.total.bite.maxTotal}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-lg">
-                      {entry.total.grandTotal}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {rankedByLevel.map(({ level, entries }) => (
+            <Card key={level}>
+              <CardHeader>
+                <CardTitle>Уровень {levelLabels[level]}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResultsTable entries={entries} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys, participantRepo, competitionRepo, generateId } from '@/shared/api'
 import type { Participant, Handler, Dog } from '../types'
+import type { CompetitionLevel } from '@/shared/types'
 
 export function useParticipantsByCompetition(competitionId: string) {
   return useQuery({
@@ -23,6 +24,7 @@ export function useAddParticipant() {
     mutationFn: (data: {
       competitionId: string
       startOrder: number
+      level: CompetitionLevel
       handler: Handler
       dog: Dog
     }) => {
