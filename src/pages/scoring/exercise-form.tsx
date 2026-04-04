@@ -20,6 +20,8 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   const score = calculateExerciseScore(input, definition, level)
 
+  const editableComponents = breakdown.filter((c) => !c.fixed)
+
   const updateComponent = (componentId: string, value: number) => {
     onChange({
       ...input,
@@ -50,28 +52,30 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {breakdown.map((comp) => (
-            <div key={comp.id} className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">
-                {comp.label} (макс {comp.maxScore})
-              </Label>
-              <Input
-                type="number"
-                min={0}
-                max={comp.maxScore}
-                step="any"
-                value={input.componentScores[comp.id] ?? 0}
-                onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
-                className="h-9"
-              />
-            </div>
-          ))}
-        </div>
+        {editableComponents.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {editableComponents.map((comp) => (
+              <div key={comp.id} className="grid gap-1">
+                <Label className="text-xs text-muted-foreground">
+                  {comp.label}
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={comp.maxScore}
+                  step="any"
+                  value={input.componentScores[comp.id] ?? 0}
+                  onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+                  className="h-9"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {definition.penaltyTable.length > 0 && (
           <>
-            <Separator />
+            {editableComponents.length > 0 && <Separator />}
             <div>
               <p className="text-sm font-medium mb-2">Штрафы</p>
               <div className="grid gap-2 sm:grid-cols-2">

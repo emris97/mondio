@@ -10,6 +10,8 @@ export type ScoringComponent = {
   id: string
   label: string
   maxScore: number
+  /** Балл всегда равен maxScore, ввод не нужен — снижение только через штрафы/ОВ */
+  fixed?: boolean
 }
 
 export type PenaltyRule = {

@@ -3,7 +3,7 @@ import type { ExerciseDefinition, ScoringComponent } from '../types'
 import { getJumpMaxScore } from './jump-tables'
 
 function simpleScoringBreakdown(label: string, maxScore: number): () => ScoringComponent[] {
-  return () => [{ id: 'total', label, maxScore }]
+  return () => [{ id: 'total', label, maxScore, fixed: true }]
 }
 
 function biteBreakdown(
@@ -54,7 +54,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     group: 'obedience',
     levels: [1, 2, 3],
     getMaxScore: () => 12,
-    scoringBreakdown: simpleScoringBreakdown('Посыл вперёд', 12),
+    scoringBreakdown: () => [{ id: 'total', label: 'Посыл вперёд (12 / 8 / 4)', maxScore: 12 }],
     penaltyTable: [
       { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2 },
       { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 4, perUnit: true, unitLabel: 'раз' },
@@ -91,7 +91,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level) => (level === 1 ? 5 : 10),
     scoringBreakdown: (level) => [
-      { id: 'total', label: 'Отказ от лакомства', maxScore: level === 1 ? 5 : 10 },
+      { id: 'total', label: 'Отказ от лакомства', maxScore: level === 1 ? 5 : 10, fixed: true },
     ],
     penaltyTable: [
       { id: 'eat', description: 'Лижет/ест/берёт лакомство', points: 0 },
@@ -147,7 +147,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level, params) => getJumpMaxScore('jumpWall', level, params),
     scoringBreakdown: (level) => [
-      { id: 'jump', label: 'Барьер', maxScore: level === 1 ? 15 : 15 },
+      { id: 'jump', label: 'Барьер', maxScore: level === 1 ? 15 : 15, fixed: true },
     ],
     penaltyTable: jumpPenalties(),
   },
@@ -158,7 +158,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level, params) => getJumpMaxScore('jumpLong', level, params),
     scoringBreakdown: () => [
-      { id: 'jump', label: 'Прыжок в длину', maxScore: 20 },
+      { id: 'jump', label: 'Прыжок в длину', maxScore: 20, fixed: true },
     ],
     penaltyTable: jumpPenalties(),
   },
@@ -169,7 +169,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level, params) => getJumpMaxScore('jumpPalisade', level, params),
     scoringBreakdown: () => [
-      { id: 'jump', label: 'Штакетник', maxScore: 20 },
+      { id: 'jump', label: 'Штакетник', maxScore: 20, fixed: true },
     ],
     penaltyTable: [
       ...jumpPenalties(),
@@ -263,7 +263,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: () => 30,
     scoringBreakdown: () => [
-      { id: 'total', label: 'Защита хозяина', maxScore: 30 },
+      { id: 'total', label: 'Защита хозяина', maxScore: 30, fixed: true },
     ],
     penaltyTable: [
       { id: 'handlerSpeaks', description: 'Проводник обращается после старта', points: 30 },
@@ -286,7 +286,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [3],
     getMaxScore: () => 30,
     scoringBreakdown: () => [
-      { id: 'total', label: 'Охрана вещи', maxScore: 30 },
+      { id: 'total', label: 'Охрана вещи', maxScore: 30, fixed: true },
     ],
     penaltyTable: [
       { id: 'biteInnerOk', description: 'Кусает во внутреннем круге до касания', points: 0 },

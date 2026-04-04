@@ -44,13 +44,28 @@ CompetitionTotal        — итог (obedience + jumps + bite = grandTotal)
 RankedEntry             — ParticipantResult + rank
 ```
 
+## Fixed-компоненты (`ScoringComponent.fixed`)
+
+У `ScoringComponent` есть флаг `fixed?: boolean`. Если `fixed: true` — балл компонента всегда равен `maxScore`, ввод судьи не нужен (снижение только через штрафы/ОВ). Это соответствует правилам Мондьоринга, где большинство упражнений оцениваются от максимума с вычетом штрафов.
+
+- `simpleScoringBreakdown` автоматически ставит `fixed: true`
+- `calculateExerciseScore` игнорирует `componentScores` для fixed-компонентов — всегда берёт `maxScore`
+- `createEmptyInputsForLevel` инициализирует fixed-компоненты значением `maxScore`
+- `ExerciseForm` не рендерит инпуты для fixed-компонентов
+
+**НЕ fixed** (судья вводит вручную):
+- `sendAway` — базовый балл зависит от зоны (12 / 8 / 4)
+- `positions` — несколько компонентов (положения + подзыв)
+- Упражнения на хватку с `biteBreakdown` — несколько компонентов (старт / хватка / прекращение)
+
 ## При добавлении нового упражнения
 
 1. Добавь `ExerciseId` в `shared/types/index.ts`
 2. Создай `ExerciseDefinition` в `config/registry.ts`
 3. Если прыжок — добавь таблицу в `jump-tables.ts`
-4. Напиши тест в `scoring.test.ts`
-5. Сверься с `mondioring_rules.md` — не выдумывай правила
+4. Реши: чисто штрафное → `fixed: true`; ввод судьи нужен → без `fixed`
+5. Напиши тест в `scoring.test.ts`
+6. Сверься с `mondioring_rules.md` — не выдумывай правила
 
 ## Допущения MVP (задокументированы в README)
 

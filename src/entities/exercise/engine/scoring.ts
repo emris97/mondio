@@ -16,8 +16,12 @@ export function calculateExerciseScore(
   level: CompetitionLevel,
 ): ExerciseScore {
   const maxScore = definition.getMaxScore(level, input.jumpParams)
+  const breakdown = definition.scoringBreakdown(level)
 
-  const componentTotal = Object.values(input.componentScores).reduce((sum, v) => sum + v, 0)
+  const componentTotal = breakdown.reduce((sum, comp) => {
+    const value = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? 0)
+    return sum + value
+  }, 0)
   const rawScore = Math.min(componentTotal, maxScore)
 
   const penaltyTotal = input.penalties.reduce((sum, entry) => {
@@ -127,7 +131,7 @@ export function createEmptyInputsForLevel(level: CompetitionLevel): RawExerciseI
   return getExercisesForLevel(level).map((def) => ({
     exerciseId: def.id,
     componentScores: Object.fromEntries(
-      def.scoringBreakdown(level).map((c) => [c.id, 0]),
+      def.scoringBreakdown(level).map((c) => [c.id, c.fixed ? c.maxScore : 0]),
     ),
     penalties: [],
     ovPenalty: 0,

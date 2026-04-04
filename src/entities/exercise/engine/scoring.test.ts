@@ -5,6 +5,7 @@ import {
   calculateCompetitionTotal,
   calculateInterruptedPursuit,
   rankParticipants,
+  createEmptyInputsForLevel,
 } from './scoring'
 import { getExerciseDefinition } from '../config'
 import type { ExerciseScore, ParticipantResult, GroupSubtotal } from '@/entities/score/types'
@@ -153,6 +154,70 @@ describe('calculateExerciseScore', () => {
     )
     expect(result.maxScore).toBe(15)
     expect(result.finalScore).toBe(15)
+  })
+
+  it('fixed-компонент использует maxScore независимо от входных данных', () => {
+    const def = getExerciseDefinition('heeling')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'heeling',
+        componentScores: { total: 0 },
+        penalties: [],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(6)
+    expect(result.finalScore).toBe(6)
+  })
+
+  it('fixed-компонент корректно работает со штрафами', () => {
+    const def = getExerciseDefinition('heeling')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'heeling',
+        componentScores: {},
+        penalties: [{ penaltyId: 'deviation', count: 4 }],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(6)
+    expect(result.penaltyTotal).toBe(2)
+    expect(result.finalScore).toBe(4)
+  })
+
+  it('посыл вперёд — не fixed, базовый балл берётся из ввода', () => {
+    const def = getExerciseDefinition('sendAway')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'sendAway',
+        componentScores: { total: 8 },
+        penalties: [],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(8)
+    expect(result.finalScore).toBe(8)
+  })
+})
+
+describe('createEmptyInputsForLevel', () => {
+  it('fixed-компоненты получают maxScore, editable — 0', () => {
+    const inputs = createEmptyInputsForLevel(1)
+    const heeling = inputs.find((i) => i.exerciseId === 'heeling')!
+    expect(heeling.componentScores['total']).toBe(6)
+
+    const sendAway = inputs.find((i) => i.exerciseId === 'sendAway')!
+    expect(sendAway.componentScores['total']).toBe(0)
+
+    const positions = inputs.find((i) => i.exerciseId === 'positions')!
+    expect(positions.componentScores['positions']).toBe(0)
+    expect(positions.componentScores['recall']).toBe(0)
   })
 })
 
