@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys, participantRepo, competitionRepo, generateId } from '@/shared/api'
-import type { Participant, Handler, Dog } from '../types'
+import type { Participant, Handler, Dog, RecallMethod } from '../types'
 import type { CompetitionLevel } from '@/shared/types'
+import type { JumpParams } from '@/entities/exercise/types'
 
 export function useParticipantsByCompetition(competitionId: string) {
   return useQuery({
@@ -25,6 +26,8 @@ export function useAddParticipant() {
       competitionId: string
       startOrder: number
       level: CompetitionLevel
+      recallMethod: RecallMethod
+      jumpParams: JumpParams
       handler: Handler
       dog: Dog
     }) => {

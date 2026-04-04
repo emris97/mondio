@@ -53,3 +53,41 @@ export function getJumpMaxScore(
       return getPalisadeMaxScore(level, params?.palisadeHeight)
   }
 }
+
+function getAvailableValues<T extends number>(
+  table: JumpScoreTable,
+  level: CompetitionLevel,
+): T[] {
+  return Object.keys(table)
+    .map(Number)
+    .filter((key) => table[key]?.[level] !== undefined) as T[]
+}
+
+export function getAvailableWallHeights(
+  level: CompetitionLevel,
+): NonNullable<JumpParams['wallHeight']>[] {
+  return getAvailableValues(wallScoreTable, level)
+}
+
+export function getAvailableLongJumpLengths(
+  level: CompetitionLevel,
+): NonNullable<JumpParams['longJumpLength']>[] {
+  return getAvailableValues(longJumpScoreTable, level)
+}
+
+export function getAvailablePalisadeHeights(
+  level: CompetitionLevel,
+): NonNullable<JumpParams['palisadeHeight']>[] {
+  return getAvailableValues(palisadeScoreTable, level)
+}
+
+export function getDefaultJumpParams(level: CompetitionLevel): JumpParams {
+  const walls = getAvailableWallHeights(level)
+  const longs = getAvailableLongJumpLengths(level)
+  const palisades = getAvailablePalisadeHeights(level)
+  return {
+    wallHeight: walls[0],
+    longJumpLength: longs[0],
+    palisadeHeight: palisades[0],
+  }
+}
