@@ -1,5 +1,5 @@
 import type { CompetitionLevel, ExerciseGroup } from '@/shared/types'
-import { getPenaltyPoints, type ExerciseDefinition } from '../types'
+import { getPenaltyPoints, type ExerciseDefinition, type JumpParams } from '../types'
 import type {
   RawExerciseInput,
   ExerciseScore,
@@ -8,7 +8,7 @@ import type {
   ParticipantResult,
   RankedEntry,
 } from '@/entities/score/types'
-import { getExercisesForLevel } from '../config'
+import { getExerciseDefinition, getExercisesForLevel } from '../config'
 
 export function calculateExerciseScore(
   input: RawExerciseInput,
@@ -19,7 +19,7 @@ export function calculateExerciseScore(
   const breakdown = definition.scoringBreakdown(level)
 
   const componentTotal = breakdown.reduce((sum, comp) => {
-    const value = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? 0)
+    const value = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
     return sum + value
   }, 0)
   const rawScore = Math.min(componentTotal, maxScore)
@@ -127,13 +127,29 @@ export function rankParticipants(entries: ParticipantResult[]): RankedEntry[] {
 }
 
 /** Получить пустой набор inputs для уровня */
-export function createEmptyInputsForLevel(level: CompetitionLevel): RawExerciseInput[] {
+export function createEmptyInputsForLevel(
+  level: CompetitionLevel,
+  jumpParams?: JumpParams,
+): RawExerciseInput[] {
   return getExercisesForLevel(level).map((def) => ({
     exerciseId: def.id,
     componentScores: Object.fromEntries(
-      def.scoringBreakdown(level).map((c) => [c.id, c.fixed ? c.maxScore : 0]),
+      def.scoringBreakdown(level).map((c) => [c.id, c.maxScore]),
     ),
     penalties: [],
     ovPenalty: 0,
+    ...(def.group === 'jumps' && jumpParams ? { jumpParams } : {}),
   }))
+}
+
+/** Обновить jumpParams на всех прыжковых inputs */
+export function mergeJumpParams(
+  inputs: RawExerciseInput[],
+  jumpParams: JumpParams,
+): RawExerciseInput[] {
+  return inputs.map((input) => {
+    const def = getExerciseDefinition(input.exerciseId)
+    if (!def || def.group !== 'jumps') return input
+    return { ...input, jumpParams }
+  })
 }

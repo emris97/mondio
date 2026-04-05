@@ -5,4 +5,5 @@ export {
   calculateInterruptedPursuit,
   rankParticipants,
   createEmptyInputsForLevel,
+  mergeJumpParams,
 } from './scoring'

@@ -84,7 +84,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                   max={comp.maxScore}
                   step="any"
                   disabled={!!zeroedBy}
-                  value={input.componentScores[comp.id] ?? 0}
+                  value={input.componentScores[comp.id] ?? comp.maxScore}
                   onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
                   className="h-9"
                 />

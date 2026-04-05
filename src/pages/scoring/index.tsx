@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipant } from '@/entities/participant/model/queries'
 import { useParticipantScore, useSaveScore } from '@/entities/score/model/queries'
-import { getExercisesByGroup, getExerciseDefinition } from '@/entities/exercise/config'
+import { getExercisesByGroup, getExerciseDefinition, getDefaultJumpParams } from '@/entities/exercise/config'
 import { calculateExerciseScore, calculateCompetitionTotal } from '@/entities/exercise/engine'
 import { ExerciseForm } from './exercise-form'
 import { ScoreBreakdown } from './score-breakdown'
@@ -27,9 +27,11 @@ export function ScoringPage() {
   const saveScore = useSaveScore()
 
   const level = participant?.level ?? 1
+  const jumpParams = participant?.jumpParams ?? getDefaultJumpParams(level)
 
   const { inputs, updateInput } = useAutoSave({
     level,
+    jumpParams,
     scoreRecord,
     participantId: pid,
     competitionId: id,
@@ -98,6 +100,8 @@ export function ScoringPage() {
             {getExercisesByGroup(level, group).map((def) => {
               const input = inputs.find((i) => i.exerciseId === def.id)
               if (!input) return null
+              const maxScore = def.getMaxScore(level, input.jumpParams)
+              if (maxScore === 0) return null
               return (
                 <ExerciseForm
                   key={def.id}

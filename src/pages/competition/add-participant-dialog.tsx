@@ -16,11 +16,40 @@ import type { RecallMethod } from '@/entities/participant/types'
 import type { JumpParams } from '@/entities/exercise/types'
 import type { CompetitionLevel } from '@/shared/types'
 
+type JumpChoice = 'jumpWall' | 'jumpLong' | 'jumpPalisade'
+
+const jumpLabels: Record<JumpChoice, string> = {
+  jumpWall: 'Барьер',
+  jumpLong: 'Прыжок в длину',
+  jumpPalisade: 'Штакетник',
+}
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   competitionId: string
   nextOrder: number
+}
+
+function buildFinalJumpParams(
+  level: CompetitionLevel,
+  allParams: JumpParams,
+  jumpChoice: JumpChoice,
+): JumpParams {
+  if (level === 3) return allParams
+  if (level === 2) {
+    return {
+      palisadeHeight: allParams.palisadeHeight,
+      ...(jumpChoice === 'jumpWall'
+        ? { wallHeight: allParams.wallHeight }
+        : { longJumpLength: allParams.longJumpLength }),
+    }
+  }
+  switch (jumpChoice) {
+    case 'jumpWall': return { wallHeight: allParams.wallHeight }
+    case 'jumpLong': return { longJumpLength: allParams.longJumpLength }
+    case 'jumpPalisade': return { palisadeHeight: allParams.palisadeHeight }
+  }
 }
 
 export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOrder }: Props) {
@@ -31,28 +60,26 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
   const [regNumber, setRegNumber] = useState('')
   const [level, setLevel] = useState<CompetitionLevel>(1)
   const [recallMethod, setRecallMethod] = useState<RecallMethod>('voice')
-  const [jumpParams, setJumpParams] = useState<JumpParams>(() => getDefaultJumpParams(1))
+  const [allJumpParams, setAllJumpParams] = useState<JumpParams>(() => getDefaultJumpParams(1))
+  const [jumpChoice, setJumpChoice] = useState<JumpChoice>('jumpPalisade')
   const addParticipant = useAddParticipant()
 
-  const availableHeights = useMemo(() => {
-    const wall = getAvailableWallHeights(level)
-    const long = getAvailableLongJumpLengths(level)
-    const palisade = getAvailablePalisadeHeights(level)
-    return {
-      wall,
-      long,
-      palisade,
-      wallItems: Object.fromEntries(wall.map((h) => [String(h), h.toFixed(2)])),
-      longItems: Object.fromEntries(long.map((l) => [String(l), l.toFixed(1)])),
-      palisadeItems: Object.fromEntries(palisade.map((h) => [String(h), h.toFixed(2)])),
-    }
-  }, [level])
+  const availableHeights = useMemo(() => ({
+    wall: getAvailableWallHeights(level),
+    long: getAvailableLongJumpLengths(level),
+    palisade: getAvailablePalisadeHeights(level),
+  }), [level])
 
-  const hasChoice = level > 1
+  const showWall = level === 3 || (level === 2 && jumpChoice === 'jumpWall') || (level === 1 && jumpChoice === 'jumpWall')
+  const showLong = level === 3 || (level === 2 && jumpChoice === 'jumpLong') || (level === 1 && jumpChoice === 'jumpLong')
+  const showPalisade = level === 3 || level === 2 || (level === 1 && jumpChoice === 'jumpPalisade')
 
   const handleLevelChange = (newLevel: CompetitionLevel) => {
     setLevel(newLevel)
-    setJumpParams(getDefaultJumpParams(newLevel))
+    setAllJumpParams(getDefaultJumpParams(newLevel))
+    if (newLevel === 2 && jumpChoice !== 'jumpWall' && jumpChoice !== 'jumpLong') {
+      setJumpChoice('jumpWall')
+    }
   }
 
   const reset = () => {
@@ -63,7 +90,8 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
     setRegNumber('')
     setLevel(1)
     setRecallMethod('voice')
-    setJumpParams(getDefaultJumpParams(1))
+    setAllJumpParams(getDefaultJumpParams(1))
+    setJumpChoice('jumpPalisade')
   }
 
   const handleSubmit = () => {
@@ -74,7 +102,7 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
         startOrder: nextOrder,
         level,
         recallMethod,
-        jumpParams,
+        jumpParams: buildFinalJumpParams(level, allJumpParams, jumpChoice),
         handler: { name: handlerName.trim(), country: country.trim() },
         dog: { name: dogName.trim(), breed: breed.trim(), registrationNumber: regNumber.trim() },
       },
@@ -159,63 +187,104 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
 
           <Separator />
 
-          <div className="grid gap-2">
-            <Label className="text-sm font-medium">Высоты прыжков</Label>
+          <div className="grid gap-3">
+            <Label className="text-sm font-medium">Прыжки</Label>
+
+            {level === 1 && (
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">Выберите прыжок</Label>
+                <Select
+                  value={jumpChoice}
+                  onValueChange={(v) => setJumpChoice(v as JumpChoice)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="jumpWall">{jumpLabels.jumpWall}</SelectItem>
+                    <SelectItem value="jumpLong">{jumpLabels.jumpLong}</SelectItem>
+                    <SelectItem value="jumpPalisade">{jumpLabels.jumpPalisade}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {level === 2 && (
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">Второй прыжок (штакетник обязателен)</Label>
+                <Select
+                  value={jumpChoice}
+                  onValueChange={(v) => setJumpChoice(v as JumpChoice)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="jumpWall">{jumpLabels.jumpWall}</SelectItem>
+                    <SelectItem value="jumpLong">{jumpLabels.jumpLong}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-3">
-              <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Барьер, м</Label>
-                <Select
-                  value={String(jumpParams.wallHeight)}
-                  onValueChange={(v) => setJumpParams((p) => ({ ...p, wallHeight: Number(v) as JumpParams['wallHeight'] }))}
-                  disabled={!hasChoice || availableHeights.wall.length <= 1}
-                  items={availableHeights.wallItems}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableHeights.wall.map((h) => (
-                      <SelectItem key={h} value={String(h)}>{h.toFixed(2)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Длина, м</Label>
-                <Select
-                  value={String(jumpParams.longJumpLength)}
-                  onValueChange={(v) => setJumpParams((p) => ({ ...p, longJumpLength: Number(v) as JumpParams['longJumpLength'] }))}
-                  disabled={!hasChoice || availableHeights.long.length <= 1}
-                  items={availableHeights.longItems}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableHeights.long.map((l) => (
-                      <SelectItem key={l} value={String(l)}>{l.toFixed(1)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Штакетник, м</Label>
-                <Select
-                  value={String(jumpParams.palisadeHeight)}
-                  onValueChange={(v) => setJumpParams((p) => ({ ...p, palisadeHeight: Number(v) as JumpParams['palisadeHeight'] }))}
-                  disabled={!hasChoice || availableHeights.palisade.length <= 1}
-                  items={availableHeights.palisadeItems}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableHeights.palisade.map((h) => (
-                      <SelectItem key={h} value={String(h)}>{h.toFixed(2)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {showWall && (
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Барьер, м</Label>
+                  <Select
+                    value={String(allJumpParams.wallHeight)}
+                    onValueChange={(v) => setAllJumpParams((p) => ({ ...p, wallHeight: Number(v) as JumpParams['wallHeight'] }))}
+                    disabled={availableHeights.wall.length <= 1}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableHeights.wall.map((h) => (
+                        <SelectItem key={h} value={String(h)}>{h.toFixed(2)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {showLong && (
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Длина, м</Label>
+                  <Select
+                    value={String(allJumpParams.longJumpLength)}
+                    onValueChange={(v) => setAllJumpParams((p) => ({ ...p, longJumpLength: Number(v) as JumpParams['longJumpLength'] }))}
+                    disabled={availableHeights.long.length <= 1}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableHeights.long.map((l) => (
+                        <SelectItem key={l} value={String(l)}>{l.toFixed(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {showPalisade && (
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Штакетник, м</Label>
+                  <Select
+                    value={String(allJumpParams.palisadeHeight)}
+                    onValueChange={(v) => setAllJumpParams((p) => ({ ...p, palisadeHeight: Number(v) as JumpParams['palisadeHeight'] }))}
+                    disabled={availableHeights.palisade.length <= 1}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableHeights.palisade.map((h) => (
+                        <SelectItem key={h} value={String(h)}>{h.toFixed(2)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         </div>
