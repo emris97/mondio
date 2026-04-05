@@ -32,10 +32,7 @@ export function calculateExerciseScore(
 
   const scoreAfterPenalties = Math.max(rawScore - penaltyTotal, 0)
 
-  const ovDeduction = Math.min(
-    input.ovPenalty,
-    Math.floor(scoreAfterPenalties * 0.1),
-  )
+  const ovDeduction = Math.min(input.ovPenalty, maxScore * 0.1)
 
   const finalScore = Math.max(scoreAfterPenalties - ovDeduction, 0)
 

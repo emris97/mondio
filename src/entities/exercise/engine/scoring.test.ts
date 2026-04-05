@@ -75,7 +75,7 @@ describe('calculateExerciseScore', () => {
     expect(result.finalScore).toBe(9)
   })
 
-  it('ограничивает ОВ-штраф 10% от текущего балла', () => {
+  it('ограничивает ОВ-штраф 10% от фиксированного максимума', () => {
     const def = getExerciseDefinition('absence')!
     const result = calculateExerciseScore(
       {
@@ -87,9 +87,9 @@ describe('calculateExerciseScore', () => {
       def,
       1,
     )
-    // rawScore=10, penalties=5, scoreAfterPenalties=5, 10% of 5 = 0.5 -> floor=0
-    expect(result.ovDeduction).toBe(0)
-    expect(result.finalScore).toBe(5)
+    // maxScore=10, 10% of 10 = 1, ovPenalty=10 → clamped to 1
+    expect(result.ovDeduction).toBe(1)
+    expect(result.finalScore).toBe(4)
   })
 
   it('рассчитывает комплекс для уровня I (макс 10)', () => {

@@ -185,13 +185,21 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         <Separator />
         <div className="flex items-center gap-4">
           <div className="grid gap-1">
-            <Label className="text-xs text-muted-foreground">ОВ-штраф (до 10%)</Label>
+            <Label className="text-xs text-muted-foreground">
+              ОВ-штраф{' '}
+              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1 * 10) / 10})</span>
+            </Label>
             <Input
               type="number"
               min={0}
+              max={maxScore * 0.1}
+              step={0.5}
               disabled={!!zeroedBy}
               value={input.ovPenalty}
-              onChange={(e) => onChange({ ...input, ovPenalty: Math.max(Number(e.target.value) || 0, 0) })}
+              onChange={(e) => {
+                const value = Math.round((Number(e.target.value) || 0) * 10) / 10
+                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), maxScore * 0.1) })
+              }}
               className="h-8 w-20"
             />
           </div>
