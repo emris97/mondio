@@ -1,0 +1,59 @@
+---
+description: Паттерны React-компонентов, страниц, стилизации
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# React-паттерны проекта
+
+## Компоненты страниц
+
+- Страницы в `pages/<feature>/index.tsx`, экспорт именованного компонента (`DashboardPage`, `ScoringPage`, ...)
+- Данные получают через query-хуки из `entities/*/model/queries.ts`
+- Роут-параметры через `useParams` из `@tanstack/react-router`
+- Навигация через `<Link>` из `@tanstack/react-router`
+
+## UI-компоненты (`components/ui/`)
+
+- Сгенерированы **shadcn CLI** (стиль `base-nova`), обёртки над `@base-ui/react`
+- Стилизация: `cva` (class-variance-authority) для вариантов + `cn()` для merge
+- **НЕ редактируй вручную** — при необходимости нового примитива используй `npx shadcn@latest add <component>`
+- ESLint игнорирует `src/components/ui/` (конфиг в `eslint.config.js`)
+
+## Стилизация
+
+- **Tailwind CSS 4** — utility-first, темы через CSS-переменные (`:root`, `.dark`)
+- `cn()` = `clsx` + `tailwind-merge` (из `@/lib/utils`)
+- Шрифт: **Geist Variable** (`@fontsource-variable/geist`)
+- CSS Modules и styled-components **не используются**
+
+## Управление состоянием
+
+- **Серверный state**: TanStack Query (основной источник данных)
+- **Локальный UI state**: `useState` / `useReducer` на уровне страницы
+- **React Context**: пока не используется. Добавляй только для действительно общего state
+- **Effector**: НЕ используется в коде, несмотря на наличие в зависимостях
+
+## Автосохранение
+
+На странице scoring реализован `useAutoSave` (`pages/scoring/use-auto-save.ts`) — дебаунс 1 сек + `useSaveScore` mutation.
+
+## Доменные типы
+
+```
+Competition      { id, name, date, location, participantIds, createdAt, updatedAt }
+Participant      { id, competitionId, startOrder, level, handler: Handler, dog: Dog }
+Handler          { name, country }
+Dog              { name, breed, registrationNumber }
+ParticipantScoreRecord  { id, participantId, competitionId, inputs: RawExerciseInput[], updatedAt }
+```
+
+`CompetitionLevel` = `1 | 2 | 3`, `ExerciseGroup` = `'obedience' | 'jumps' | 'bite'`
+
+## Чеклист при создании новой страницы
+
+1. Создай `pages/<feature>/index.tsx` с именованным экспортом
+2. Добавь маршрут в `app/router/routes.tsx`
+3. Используй query-хуки из `entities/` для данных
+4. Используй `components/ui/` для UI-примитивов
+5. Бизнес-логику вынеси в хук или сервис

@@ -1,0 +1,69 @@
+---
+description: Слой данных — Repository, localStorage, TanStack Query, персистенция
+globs: src/shared/api/**/*,src/entities/*/model/**/*
+alwaysApply: false
+---
+
+# Слой данных
+
+## Архитектура доступа к данным
+
+```
+UI (pages) → useQuery/useMutation (entities/*/model/queries.ts)
+           → Repository<T> (shared/api/repository.ts)
+           → localStorage (shared/api/local-storage-repository.ts)
+```
+
+## Repository<T> — абстракция хранилища
+
+```typescript
+type Repository<T extends { id: string }> = {
+  getAll(): T[]
+  getById(id: string): T | null
+  save(entity: T): void
+  remove(id: string): void
+}
+```
+
+Реализация: `createLocalStorageRepository(key)` в `local-storage-repository.ts`.
+
+**Стратегия миграции**: заменить `createLocalStorageRepository` на HTTP-реализацию (axios). Интерфейс `Repository<T>` не меняется.
+
+## Синглтоны репозиториев (`repositories.ts`)
+
+- `competitionRepo` — ключ `mondio:competitions`
+- `participantRepo` — ключ `mondio:participants`
+- `scoreRepo` — ключ `mondio:scores`
+
+## TanStack Query
+
+**QueryClient** настроен в `app/providers/index.tsx`: `staleTime: 5 мин`, `retry: false`.
+
+### Query keys (`shared/api/query-keys.ts`)
+
+```typescript
+queryKeys.competitions.all          // ['competitions']
+queryKeys.competitions.detail(id)   // ['competitions', id]
+queryKeys.participants.byCompetition(id)  // ['participants', 'competition', id]
+queryKeys.scores.byParticipant(id)  // ['scores', 'participant', id]
+```
+
+### Паттерн query-хуков
+
+Каждая entity имеет `model/queries.ts` с хуками:
+- `useCompetitions()`, `useCompetition(id)`, `useCreateCompetition()`, ...
+- `useParticipantsByCompetition(id)`, `useAddParticipant()`, ...
+- `useScoresByCompetition(id)`, `useParticipantScore(id)`, `useSaveScore()`, ...
+
+Мутации инвалидируют связанные query keys.
+
+## При добавлении новой entity
+
+1. Создай тип в `entities/<name>/types.ts`
+2. Добавь репозиторий в `shared/api/repositories.ts` с ключом `mondio:<name>`
+3. Добавь query keys в `shared/api/query-keys.ts`
+4. Создай `entities/<name>/model/queries.ts` с useQuery/useMutation
+
+## Импорт/экспорт данных
+
+`pages/dashboard/import-export.tsx` — JSON экспорт/импорт через `loadFromStorage` / `saveToStorage` + `queryClient.invalidateQueries()`.

@@ -1,0 +1,74 @@
+---
+description: Правила работы со scoring engine — расчёт баллов, доменная логика
+globs: src/entities/exercise/**/*
+alwaysApply: false
+---
+
+# Scoring Engine
+
+Ядро приложения — чистые функции расчёта баллов в `entities/exercise/engine/`.
+
+## Ключевые функции (`scoring.ts`)
+
+- `calculateExerciseScore(input, definition, level)` — баллы за упражнение: компоненты − штрафы − ОВ
+- `calculateGroupSubtotal(scores, group)` — субтотал по группе (obedience / jumps / bite)
+- `calculateCompetitionTotal(scores, level)` — итог: 200 (I) / 300 (II) / 400 (III)
+- `calculateInterruptedPursuit(...)` — прерванная атака (III): `(frontalStick + frontalObjects) / 3 + start − penalties`
+- `rankParticipants(entries)` — рейтинг с тай-брейком: хватка → послушание → прыжки
+- `createEmptyInputsForLevel(level)` — пустые inputs для уровня
+
+## Принципы
+
+- **Чистые функции** — без side effects, без React, без localStorage
+- **Data-driven** — 17 упражнений по 3 уровням, таблицы прыжков, таблицы штрафов в `config/`
+- **Тесты обязательны** — `scoring.test.ts` рядом с `scoring.ts`, запуск: `pnpm test`
+- **Нет magic numbers** — все константы из `config/registry.ts` и `config/jump-tables.ts`
+
+## Конфигурация (`config/`)
+
+- `registry.ts` — реестр `ExerciseDefinition[]` с `scoringBreakdown`, `penaltyTable`, `getMaxScore`
+- `jump-tables.ts` — таблицы максимумов для прыжков (барьер / длина / штакетник × высота × уровень)
+- `index.ts` — `getExercisesForLevel(level)` — фильтрация упражнений по уровню
+
+## Типы (flow данных)
+
+```
+RawExerciseInput        — сырой ввод судьи (componentScores, penalties, ovPenalty)
+    ↓ calculateExerciseScore()
+ExerciseScore           — результат упражнения (rawScore, penaltyTotal, ovDeduction, finalScore)
+    ↓ calculateGroupSubtotal()
+GroupSubtotal           — субтотал группы
+    ↓ calculateCompetitionTotal()
+CompetitionTotal        — итог (obedience + jumps + bite = grandTotal)
+    ↓ rankParticipants()
+RankedEntry             — ParticipantResult + rank
+```
+
+## Fixed-компоненты (`ScoringComponent.fixed`)
+
+У `ScoringComponent` есть флаг `fixed?: boolean`. Если `fixed: true` — балл компонента всегда равен `maxScore`, ввод судьи не нужен (снижение только через штрафы/ОВ). Это соответствует правилам Мондьоринга, где большинство упражнений оцениваются от максимума с вычетом штрафов.
+
+- `simpleScoringBreakdown` автоматически ставит `fixed: true`
+- `calculateExerciseScore` игнорирует `componentScores` для fixed-компонентов — всегда берёт `maxScore`
+- `createEmptyInputsForLevel` инициализирует fixed-компоненты значением `maxScore`
+- `ExerciseForm` не рендерит инпуты для fixed-компонентов
+
+**НЕ fixed** (судья вводит вручную):
+- `sendAway` — базовый балл зависит от зоны (12 / 8 / 4)
+- `positions` — несколько компонентов (положения + подзыв)
+- Упражнения на хватку с `biteBreakdown` — несколько компонентов (старт / хватка / прекращение)
+
+## При добавлении нового упражнения
+
+1. Добавь `ExerciseId` в `shared/types/index.ts`
+2. Создай `ExerciseDefinition` в `config/registry.ts`
+3. Если прыжок — добавь таблицу в `jump-tables.ts`
+4. Реши: чисто штрафное → `fixed: true`; ввод судьи нужен → без `fixed`
+5. Напиши тест в `scoring.test.ts`
+6. Сверься с `mondioring_rules.md` — не выдумывай правила
+
+## Допущения MVP (задокументированы в README)
+
+- ОВ-штраф ≤ 10% от баллов упражнения, вводится вручную
+- Прерванная атака — если нет хватки в лобовой, атака аннулируется (правило 939)
+- Один судья, мультисудейство не поддерживается

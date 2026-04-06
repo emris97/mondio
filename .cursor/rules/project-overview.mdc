@@ -1,0 +1,49 @@
+---
+description: Общий контекст проекта Mondio — стек, структура, команды запуска
+alwaysApply: true
+---
+
+# Mondio — Mondioring Competition Management
+
+SPA для проведения соревнований по Мондьорингу: создание соревнований, ввод результатов, автоматический подсчёт баллов, рейтинг участников.
+
+## Стек
+
+- **Vite 8** + **React 19** + **TypeScript 5.9** (strict)
+- **TanStack Router** — code-based маршрутизация (не file-based)
+- **TanStack Query** — кеш-слой данных, CRUD-мутации
+- **Tailwind CSS 4** + **shadcn/ui** (base-nova стиль, `@base-ui/react`) — UI-компоненты
+- **class-variance-authority** + **clsx** + **tailwind-merge** — стилизация вариантов
+- **lucide-react** — иконки
+- **Vitest** — unit-тесты
+- **pnpm** — менеджер пакетов (lockfile: `pnpm-lock.yaml`)
+
+## Зависимости в package.json, но НЕ используемые в коде
+
+- `effector` / `effector-react` — были в ТЗ, фактически не подключены. Не импортировать, пока нет явного решения.
+- `axios` — подготовлен для будущей миграции на REST API. Сейчас HTTP-запросов нет.
+
+## Команды
+
+```bash
+pnpm dev          # Dev-сервер: http://localhost:5173
+pnpm build        # tsc -b && vite build
+pnpm test         # vitest run
+pnpm test:watch   # vitest (watch)
+pnpm lint         # eslint .
+```
+
+## Docker
+
+```bash
+docker compose up                  # Dev с hot reload (:5173)
+docker compose --profile prod up   # Production nginx (:8080)
+```
+
+## Алиас импортов
+
+`@/` → `src/` (настроен в `vite.config.ts`, `tsconfig.json`). Всегда используй `@/` для импортов внутри `src/`.
+
+## Источник доменных правил
+
+Файл `mondioring_rules.md` в корне — первоисточник правил Мондьоринга. При реализации доменной логики сверяйся с ним, а не выдумывай правила.

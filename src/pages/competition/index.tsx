@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipantsByCompetition, useDeleteParticipant } from '@/entities/participant/model/queries'
 import { AddParticipantDialog } from './add-participant-dialog'
+import type { CompetitionLevel } from '@/shared/types'
 
-const levelLabels = { 1: 'I', 2: 'II', 3: 'III' } as const
+const levelLabels: Record<CompetitionLevel, string> = { 1: 'I', 2: 'II', 3: 'III' }
 
 export function CompetitionPage() {
   const { id } = useParams({ from: '/competition/$id' })
@@ -43,9 +44,6 @@ export function CompetitionPage() {
             {competition.location} · {new Date(competition.date).toLocaleDateString('ru-RU')}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1">
-          Уровень {levelLabels[competition.level]}
-        </Badge>
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -72,6 +70,7 @@ export function CompetitionPage() {
                   <TableHead>Проводник</TableHead>
                   <TableHead>Собака</TableHead>
                   <TableHead>Порода</TableHead>
+                  <TableHead className="text-center">Уровень</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
@@ -84,6 +83,9 @@ export function CompetitionPage() {
                       <TableCell>{p.handler.name}</TableCell>
                       <TableCell>{p.dog.name}</TableCell>
                       <TableCell className="text-muted-foreground">{p.dog.breed}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary">{levelLabels[p.level]}</Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
                           <Link to="/competition/$id/participant/$pid" params={{ id, pid: p.id }}>

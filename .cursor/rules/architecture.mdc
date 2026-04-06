@@ -1,0 +1,76 @@
+---
+description: Архитектура проекта — FSD-слои, структура каталогов, конвенции кода
+alwaysApply: true
+---
+
+# Архитектура — Feature-Sliced Design (адаптированный)
+
+## Слои и их ответственность
+
+```
+src/
+  app/              — bootstrap: провайдеры, роутер
+  pages/            — страницы (route-level), локальные диалоги/формы
+  entities/         — доменные сущности: типы, query-хуки, конфигурации, движок
+  shared/           — api-абстракции, общие типы, утилиты
+  components/ui/    — переиспользуемые UI-примитивы (shadcn, НЕ редактировать вручную)
+  lib/              — утилита cn() (clsx + tailwind-merge)
+```
+
+Слоёв `features/` и `widgets/` пока нет. Если добавляешь use-case-логику, не привязанную к конкретной странице, создай `features/<name>/`.
+
+## Правила зависимостей между слоями
+
+- `pages/` → `entities/`, `shared/`, `components/ui/`
+- `entities/` → `shared/`
+- `shared/` → ничего из проекта (только внешние библиотеки)
+- `components/ui/` → только `lib/utils` (утилита `cn`)
+- **Никогда**: `entities/` → `pages/`, `shared/` → `entities/`
+
+## Структура страницы
+
+```
+pages/<feature>/
+  index.tsx                — главный компонент страницы (экспорт)
+  <dialog>.tsx             — локальные диалоги
+  <form>.tsx               — локальные формы
+  use-<hook>.ts            — хуки только для этой страницы
+```
+
+Страница использует query-хуки из `entities/*/model/queries.ts`, а не обращается к репозиториям напрямую.
+
+## Структура entity
+
+```
+entities/<entity>/
+  types.ts                 — доменные типы
+  model/queries.ts         — useQuery/useMutation хуки (TanStack Query)
+```
+
+Для `exercise/` дополнительно:
+```
+  config/                  — реестр упражнений, таблицы прыжков, штрафы
+  engine/                  — чистые функции расчёта + тесты рядом
+```
+
+## Маршруты
+
+Определены кодом в `src/app/router/routes.tsx` (не file-based):
+
+| Путь | Страница | Параметры |
+|------|----------|-----------|
+| `/` | DashboardPage | — |
+| `/competition/$id` | CompetitionPage | `id` |
+| `/competition/$id/participant/$pid` | ScoringPage | `id`, `pid` |
+| `/competition/$id/results` | ResultsPage | `id` |
+| `/settings` | SettingsPage | — |
+
+При добавлении маршрута: создай `createRoute` в `routes.tsx`, добавь в `routeTree`.
+
+## Конвенции
+
+- Алиас `@/` для всех импортов из `src/`
+- Strict TypeScript: не используй `any`, предпочитай `type` вместо `interface`
+- Бизнес-логика — в хуках/сервисах, НЕ в JSX
+- Тесты кладутся рядом с модулем: `scoring.test.ts` рядом с `scoring.ts`
+- Файлы `components/ui/*` сгенерированы shadcn CLI — не редактируй вручную

@@ -1,5 +1,5 @@
 import type { CompetitionLevel, ExerciseGroup } from '@/shared/types'
-import type { ExerciseDefinition } from '../types'
+import { getPenaltyPoints, type ExerciseDefinition, type JumpParams } from '../types'
 import type {
   RawExerciseInput,
   ExerciseScore,
@@ -8,7 +8,7 @@ import type {
   ParticipantResult,
   RankedEntry,
 } from '@/entities/score/types'
-import { getExercisesForLevel } from '../config'
+import { getExerciseDefinition, getExercisesForLevel } from '../config'
 
 export function calculateExerciseScore(
   input: RawExerciseInput,
@@ -16,22 +16,23 @@ export function calculateExerciseScore(
   level: CompetitionLevel,
 ): ExerciseScore {
   const maxScore = definition.getMaxScore(level, input.jumpParams)
+  const breakdown = definition.scoringBreakdown(level)
 
-  const componentTotal = Object.values(input.componentScores).reduce((sum, v) => sum + v, 0)
+  const componentTotal = breakdown.reduce((sum, comp) => {
+    const value = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
+    return sum + value
+  }, 0)
   const rawScore = Math.min(componentTotal, maxScore)
 
   const penaltyTotal = input.penalties.reduce((sum, entry) => {
     const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
     if (!rule) return sum
-    return sum + rule.points * entry.count
+    return sum + getPenaltyPoints(rule, level) * entry.count
   }, 0)
 
   const scoreAfterPenalties = Math.max(rawScore - penaltyTotal, 0)
 
-  const ovDeduction = Math.min(
-    input.ovPenalty,
-    Math.floor(scoreAfterPenalties * 0.1),
-  )
+  const ovDeduction = Math.min(input.ovPenalty, maxScore * 0.1)
 
   const finalScore = Math.max(scoreAfterPenalties - ovDeduction, 0)
 
@@ -123,13 +124,29 @@ export function rankParticipants(entries: ParticipantResult[]): RankedEntry[] {
 }
 
 /** Получить пустой набор inputs для уровня */
-export function createEmptyInputsForLevel(level: CompetitionLevel): RawExerciseInput[] {
+export function createEmptyInputsForLevel(
+  level: CompetitionLevel,
+  jumpParams?: JumpParams,
+): RawExerciseInput[] {
   return getExercisesForLevel(level).map((def) => ({
     exerciseId: def.id,
     componentScores: Object.fromEntries(
-      def.scoringBreakdown(level).map((c) => [c.id, 0]),
+      def.scoringBreakdown(level).map((c) => [c.id, c.maxScore]),
     ),
     penalties: [],
     ovPenalty: 0,
+    ...(def.group === 'jumps' && jumpParams ? { jumpParams } : {}),
   }))
+}
+
+/** Обновить jumpParams на всех прыжковых inputs */
+export function mergeJumpParams(
+  inputs: RawExerciseInput[],
+  jumpParams: JumpParams,
+): RawExerciseInput[] {
+  return inputs.map((input) => {
+    const def = getExerciseDefinition(input.exerciseId)
+    if (!def || def.group !== 'jumps') return input
+    return { ...input, jumpParams }
+  })
 }

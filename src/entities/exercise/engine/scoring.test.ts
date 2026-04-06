@@ -5,6 +5,8 @@ import {
   calculateCompetitionTotal,
   calculateInterruptedPursuit,
   rankParticipants,
+  createEmptyInputsForLevel,
+  mergeJumpParams,
 } from './scoring'
 import { getExerciseDefinition } from '../config'
 import type { ExerciseScore, ParticipantResult, GroupSubtotal } from '@/entities/score/types'
@@ -73,7 +75,7 @@ describe('calculateExerciseScore', () => {
     expect(result.finalScore).toBe(9)
   })
 
-  it('ограничивает ОВ-штраф 10% от текущего балла', () => {
+  it('ограничивает ОВ-штраф 10% от фиксированного максимума', () => {
     const def = getExerciseDefinition('absence')!
     const result = calculateExerciseScore(
       {
@@ -85,9 +87,9 @@ describe('calculateExerciseScore', () => {
       def,
       1,
     )
-    // rawScore=10, penalties=5, scoreAfterPenalties=5, 10% of 5 = 0.5 -> floor=0
-    expect(result.ovDeduction).toBe(0)
-    expect(result.finalScore).toBe(5)
+    // maxScore=10, 10% of 10 = 1, ovPenalty=10 → clamped to 1
+    expect(result.ovDeduction).toBe(1)
+    expect(result.finalScore).toBe(4)
   })
 
   it('рассчитывает комплекс для уровня I (макс 10)', () => {
@@ -153,6 +155,104 @@ describe('calculateExerciseScore', () => {
     )
     expect(result.maxScore).toBe(15)
     expect(result.finalScore).toBe(15)
+  })
+
+  it('fixed-компонент использует maxScore независимо от входных данных', () => {
+    const def = getExerciseDefinition('heeling')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'heeling',
+        componentScores: { total: 0 },
+        penalties: [],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(6)
+    expect(result.finalScore).toBe(6)
+  })
+
+  it('fixed-компонент корректно работает со штрафами', () => {
+    const def = getExerciseDefinition('heeling')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'heeling',
+        componentScores: {},
+        penalties: [{ penaltyId: 'deviation', count: 4 }],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(6)
+    expect(result.penaltyTotal).toBe(2)
+    expect(result.finalScore).toBe(4)
+  })
+
+  it('посыл вперёд — не fixed, базовый балл берётся из ввода', () => {
+    const def = getExerciseDefinition('sendAway')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'sendAway',
+        componentScores: { total: 8 },
+        penalties: [],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.rawScore).toBe(8)
+    expect(result.finalScore).toBe(8)
+  })
+})
+
+describe('createEmptyInputsForLevel', () => {
+  it('все компоненты инициализируются с maxScore', () => {
+    const inputs = createEmptyInputsForLevel(1)
+    const heeling = inputs.find((i) => i.exerciseId === 'heeling')!
+    expect(heeling.componentScores['total']).toBe(6)
+
+    const sendAway = inputs.find((i) => i.exerciseId === 'sendAway')!
+    expect(sendAway.componentScores['total']).toBe(12)
+
+    const positions = inputs.find((i) => i.exerciseId === 'positions')!
+    expect(positions.componentScores['positions']).toBe(9)
+    expect(positions.componentScores['recall']).toBe(1)
+  })
+
+  it('jumpParams передаются на прыжковые упражнения', () => {
+    const jp = { wallHeight: 2.1 as const, longJumpLength: 3.5 as const, palisadeHeight: 1.1 as const }
+    const inputs = createEmptyInputsForLevel(2, jp)
+
+    const wall = inputs.find((i) => i.exerciseId === 'jumpWall')!
+    expect(wall.jumpParams).toEqual(jp)
+
+    const long = inputs.find((i) => i.exerciseId === 'jumpLong')!
+    expect(long.jumpParams).toEqual(jp)
+
+    const palisade = inputs.find((i) => i.exerciseId === 'jumpPalisade')!
+    expect(palisade.jumpParams).toEqual(jp)
+  })
+
+  it('без jumpParams прыжковые inputs не имеют jumpParams', () => {
+    const inputs = createEmptyInputsForLevel(1)
+    const wall = inputs.find((i) => i.exerciseId === 'jumpWall')!
+    expect(wall.jumpParams).toBeUndefined()
+  })
+})
+
+describe('mergeJumpParams', () => {
+  it('обновляет jumpParams только на прыжковых inputs', () => {
+    const inputs = createEmptyInputsForLevel(1)
+    const jp = { wallHeight: 1.8 as const, longJumpLength: 3.0 as const, palisadeHeight: 1.0 as const }
+    const merged = mergeJumpParams(inputs, jp)
+
+    const wall = merged.find((i) => i.exerciseId === 'jumpWall')!
+    expect(wall.jumpParams).toEqual(jp)
+
+    const heeling = merged.find((i) => i.exerciseId === 'heeling')!
+    expect(heeling.jumpParams).toBeUndefined()
   })
 })
 

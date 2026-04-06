@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys, competitionRepo, generateId } from '@/shared/api'
 import type { Competition } from '../types'
-import type { CompetitionLevel } from '@/shared/types'
 
 export function useCompetitions() {
   return useQuery({
@@ -20,7 +19,7 @@ export function useCompetition(id: string) {
 export function useCreateCompetition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name: string; date: string; location: string; level: CompetitionLevel }) => {
+    mutationFn: (data: { name: string; date: string; location: string }) => {
       const now = new Date().toISOString()
       const competition: Competition = {
         id: generateId(),

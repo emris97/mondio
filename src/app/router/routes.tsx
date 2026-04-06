@@ -2,8 +2,8 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
-  Outlet,
 } from '@tanstack/react-router'
+import { RootLayout } from '@/app/router/root-layout'
 import { DashboardPage } from '@/pages/dashboard'
 import { CompetitionPage } from '@/pages/competition'
 import { ScoringPage } from '@/pages/scoring'
@@ -11,11 +11,7 @@ import { ResultsPage } from '@/pages/results'
 import { SettingsPage } from '@/pages/settings'
 
 const rootRoute = createRootRoute({
-  component: () => (
-    <div className="min-h-screen bg-background text-foreground">
-      <Outlet />
-    </div>
-  ),
+  component: RootLayout,
 })
 
 const dashboardRoute = createRoute({
