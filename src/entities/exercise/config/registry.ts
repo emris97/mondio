@@ -41,7 +41,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     scoringBreakdown: simpleScoringBreakdown('Отсутствие хозяина', 10),
     penaltyTable: [
       { id: 'crawl', description: 'Продвижка без смены положения, за метр', points: 1, perUnit: true, unitLabel: 'м' },
-      { id: 'posChangeReturn', description: 'Смена положения при возвращении', points: 2 },
+      { id: 'posChangeReturn', description: 'Смена положения при возвращении', points: 2, binary: true },
       { id: 'posChangeDuring', description: 'Смена положения во время отсутствия', points: 10, binary: true },
       { id: 'peekFromHide', description: 'Проводник показался из укрытия', points: 10, binary: true },
       { id: 'unauthorizedCmd', description: 'Неразрешённая команда', points: 10, binary: true },
@@ -56,12 +56,12 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     getMaxScore: () => 12,
     scoringBreakdown: () => [{ id: 'total', label: 'Посыл вперёд (12 / 8 / 4)', maxScore: 12 }],
     penaltyTable: [
-      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2 },
+      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2, binary: true },
       { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 4, perUnit: true, unitLabel: 'раз' },
       { id: 'zigzag', description: 'Зигзагообразное движение, за смену', points: 1, perUnit: true, unitLabel: 'раз' },
       { id: 'earlyTurn', description: 'Разворот до команды, за раз', points: 2, perUnit: true, unitLabel: 'раз' },
-      { id: 'earlyStartBefore', description: 'Преждевременный старт до разрешения', points: 4 },
-      { id: 'earlyStartAfter', description: 'Преждевременный старт после разрешения', points: 2 },
+      { id: 'earlyStartBefore', description: 'Преждевременный старт до разрешения', points: 4, binary: true },
+      { id: 'earlyStartAfter', description: 'Преждевременный старт после разрешения', points: 2, binary: true },
       { id: 'noFinish', description: 'Не пересекает финишной линии', points: 12, binary: true },
       { id: 'extraRecall', description: 'Доп. команда подзыва', points: 2, perUnit: true, unitLabel: 'раз' },
     ],
@@ -108,13 +108,13 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     scoringBreakdown: simpleScoringBreakdown('Апортировка', 12),
     penaltyTable: [
       { id: 'extraCmd', description: 'Доп. или неверная команда', points: 12, binary: true },
-      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2 },
+      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2, binary: true },
       { id: 'timeout', description: 'Не уложился в 15 сек', points: 12, binary: true },
-      { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 4 },
-      { id: 'earlyStartAfter', description: 'Преждевременный старт после сигнала', points: 2 },
-      { id: 'chewing', description: 'Жуёт/играет с предметом', points: 1 },
+      { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 4, binary: true },
+      { id: 'earlyStartAfter', description: 'Преждевременный старт после сигнала', points: 2, binary: true },
+      { id: 'chewing', description: 'Жуёт/играет с предметом', points: 1, binary: true },
       { id: 'drop', description: 'Роняет предмет, за раз', points: 1, perUnit: true, unitLabel: 'раз' },
-      { id: 'notSitting', description: 'Передаёт не из положения сидя', points: 1 },
+      { id: 'notSitting', description: 'Передаёт не из положения сидя', points: 1, binary: true },
     ],
   },
   {
@@ -125,14 +125,14 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     getMaxScore: () => 15,
     scoringBreakdown: simpleScoringBreakdown('Выборка', 15),
     penaltyTable: [
-      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2 },
+      { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2, binary: true },
       { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 15, binary: true },
       { id: 'timeout', description: 'Не принесён / с опозданием', points: 15, binary: true },
-      { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 4 },
-      { id: 'earlyStartAfter', description: 'Преждевременный старт после сигнала', points: 2 },
+      { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 4, binary: true },
+      { id: 'earlyStartAfter', description: 'Преждевременный старт после сигнала', points: 2, binary: true },
       { id: 'chewing', description: 'Жуёт предмет', points: 1 },
       { id: 'drop', description: 'Роняет предмет, за раз', points: 1, perUnit: true, unitLabel: 'раз' },
-      { id: 'notSitting', description: 'Передаёт не из положения сидя', points: 1 },
+      { id: 'notSitting', description: 'Передаёт не из положения сидя', points: 1, binary: true },
       { id: 'leaveArea', description: 'Покидает круг 2 м до возвращения', points: 15, binary: true },
       { id: 'crawlInArea', description: 'Перемещение в круге 2 м, за метр', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'wrongItem', description: 'Ошибка с выбором предмета', points: 15, binary: true },
@@ -306,14 +306,14 @@ export const exerciseRegistry: ExerciseDefinition[] = [
 function jumpPenalties() {
   return [
     { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (+потеря попытки)', points: 4 },
-    { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 2 },
-    { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2 },
+    { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 2, binary: true },
+    { id: 'voiceAndGesture', description: 'Команда голосом и жестом', points: 2, binary: true },
     { id: 'refusal', description: 'Отказ от прыжка / уход', points: 4 },
     { id: 'failedAttempt', description: 'Неудачная попытка', points: 2 },
     { id: 'continuesMoving', description: 'Продолжает движение после фиксирующей', points: 2 },
     { id: 'extraCmd', description: 'Доп. команда (остановка/подготовка/подзыв)', points: 2 },
     { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 5 },
-    { id: 'noReturn10s', description: 'Не возвращается к ноге за 10 сек', points: 2 },
+    { id: 'noReturn10s', description: 'Не возвращается к ноге за 10 сек', points: 2, binary: true },
   ]
 }
 
@@ -331,12 +331,12 @@ function biteAttackPenalties() {
     { id: 'extraRecall', description: 'Доп. команда подзыва', points: 5 },
     { id: 'recallNoBite', description: 'Подзыв без хватки (+штрафы за сек)', points: 5 },
     { id: 'noReturn30s', description: 'Не подходит к проводнику за 30 сек', points: 10 },
-    { id: 'actionsAfter', description: 'Нерегламентированные действия после', points: 10 },
+    { id: 'actionsAfter', description: 'Любые нерегламентированные действия после завершения упражнения', points: 10 },
     { id: 'refusesAttack', description: 'Отказ атаковать / нет хватки', points: 50, binary: true },
     { id: 'handlerLeaves', description: 'Проводник покидает стартовую зону', points: 50, binary: true },
     { id: 'training', description: 'Использует атаку для тренировки', points: 50, binary: true },
-    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5 },
-    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15 },
+    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, binary: true },
+    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, binary: true },
   ]
 }
 
