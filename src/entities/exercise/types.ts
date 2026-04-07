@@ -25,6 +25,8 @@ export type PenaltyRule = {
   unitLabel?: string
   /** Штраф бинарный (обнуляет или фиксированно снимает) — UI рендерит checkbox */
   binary?: boolean
+  /** К какому компоненту (фазе) привязан штраф (id из scoringBreakdown). Если не указано — вычитается из общей суммы */
+  appliesTo?: string
 }
 
 export function getPenaltyPoints(rule: PenaltyRule, level: CompetitionLevel): number {

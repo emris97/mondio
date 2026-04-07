@@ -205,6 +205,126 @@ describe('calculateExerciseScore', () => {
     expect(result.rawScore).toBe(8)
     expect(result.finalScore).toBe(8)
   })
+
+  it('appliesTo: штраф вычитается из своего компонента, а не из общей суммы', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [{ penaltyId: 'earlyStartBefore', count: 1 }],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // earlyStartBefore (10) appliesTo: 'start' → start: max(10−10, 0) = 0
+    // bite: 30, stop: 10 → rawScore = 0+30+10 = 40
+    expect(result.rawScore).toBe(40)
+    expect(result.penaltyTotal).toBe(10)
+    expect(result.finalScore).toBe(40)
+  })
+
+  it('appliesTo: штраф фазы не уводит компонент ниже 0 (cap)', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [{ penaltyId: 'obstacleBypass', count: 1 }],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // obstacleBypass (15) appliesTo: 'start' → start: max(10−15, 0) = 0
+    // rawScore = 0+30+10 = 40, excess 5 pts lost (capped per-component)
+    expect(result.rawScore).toBe(40)
+    expect(result.finalScore).toBe(40)
+  })
+
+  it('appliesTo: несколько штрафов одной фазы суммируются', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [
+          { penaltyId: 'holdAfterStop', count: 3 },
+          { penaltyId: 'extraRecall', count: 1 },
+        ],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // holdAfterStop (2/сек × 3 = 6) + extraRecall (5) = 11 → stop: max(10−11, 0) = 0
+    // rawScore = 10+30+0 = 40
+    expect(result.rawScore).toBe(40)
+    expect(result.finalScore).toBe(40)
+  })
+
+  it('appliesTo: штрафы разных фаз работают независимо', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [
+          { penaltyId: 'earlyStartAfter', count: 1 },
+          { penaltyId: 'noBitePerSecond', count: 2 },
+          { penaltyId: 'extraRecall', count: 1 },
+        ],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // start: 10−5 = 5, bite: 30−6 = 24, stop: 10−5 = 5
+    // rawScore = 5+24+5 = 34
+    expect(result.rawScore).toBe(34)
+    expect(result.penaltyTotal).toBe(16)
+    expect(result.finalScore).toBe(34)
+  })
+
+  it('без appliesTo: штраф вычитается из общей суммы (обратная совместимость)', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [{ penaltyId: 'earlyStartRepeat', count: 1 }],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // earlyStartRepeat (50, binary, no appliesTo) → rawScore = 50, finalScore = max(50−50, 0) = 0
+    expect(result.rawScore).toBe(50)
+    expect(result.finalScore).toBe(0)
+  })
+
+  it('смешанные штрафы: scoped + unscoped', () => {
+    const def = getExerciseDefinition('frontalAttackStick')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'frontalAttackStick',
+        componentScores: { start: 10, bite: 30, stop: 10 },
+        penalties: [
+          { penaltyId: 'earlyStartBefore', count: 1 },
+          { penaltyId: 'unauthorizedActions', count: 1 },
+        ],
+        ovPenalty: 0,
+      },
+      def,
+      3,
+    )
+    // earlyStartBefore (10, appliesTo: start) → start: 0
+    // rawScore = 0+30+10 = 40
+    // unauthorizedActions (50, no appliesTo) → max(40−50, 0) = 0
+    expect(result.rawScore).toBe(40)
+    expect(result.finalScore).toBe(0)
+  })
 })
 
 describe('createEmptyInputsForLevel', () => {
