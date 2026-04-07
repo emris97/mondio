@@ -319,24 +319,28 @@ function jumpPenalties() {
 
 function biteAttackPenalties() {
   return [
-    { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (−5 от ОВ)', points: 10 },
+    // --- Старт ---
+    { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (−5 от ОВ)', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 5, appliesTo: 'start' },
+    { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 10, appliesTo: 'start' },
+    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, binary: true, appliesTo: 'start' },
+    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, binary: true, appliesTo: 'start' },
+    // --- Хватка ---
+    { id: 'noBitePerSecond', description: 'Отсутствие хватки, за секунду', points: 3, perUnit: true, unitLabel: 'сек', appliesTo: 'bite' },
+    { id: 'quickRegrips', description: 'Быстрые перехваты', points: 1, perUnit: true, unitLabel: 'раз', appliesTo: 'bite' },
+    // --- Прекращение и отзыв ---
+    { id: 'holdAfterStop', description: 'Удерживает после команды, за сек', points: 2, perUnit: true, unitLabel: 'сек', appliesTo: 'stop' },
+    { id: 'biteAfterStop', description: 'Кусает после прекращения', points: 2, perUnit: true, unitLabel: 'раз', appliesTo: 'stop' },
+    { id: 'extraRecall', description: 'Доп. команда подзыва', points: 5, appliesTo: 'stop' },
+    { id: 'recallNoBite', description: 'Подзыв без хватки (+штрафы за сек)', points: 5, appliesTo: 'stop' },
+    { id: 'noReturn30s', description: 'Не подходит к проводнику за 30 сек', points: 10, appliesTo: 'stop' },
+    { id: 'actionsAfter', description: 'Любые нерегламентированные действия после завершения упражнения', points: 10, appliesTo: 'stop' },
+    // --- Общие (обнуляют упражнение) ---
     { id: 'earlyStartRepeat', description: 'Повторный преждевр. старт до сигнала', points: 50, binary: true },
-    { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 5 },
-    { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 10 },
     { id: 'unauthorizedActions', description: 'Нерегламентированные действия', points: 50, binary: true },
-    { id: 'noBitePerSecond', description: 'Отсутствие хватки, за секунду', points: 3, perUnit: true, unitLabel: 'сек' },
-    { id: 'quickRegrips', description: 'Быстрые перехваты', points: 1, perUnit: true, unitLabel: 'раз' },
-    { id: 'holdAfterStop', description: 'Удерживает после команды, за сек', points: 2, perUnit: true, unitLabel: 'сек' },
-    { id: 'biteAfterStop', description: 'Кусает после прекращения', points: 2, perUnit: true, unitLabel: 'раз' },
-    { id: 'extraRecall', description: 'Доп. команда подзыва', points: 5 },
-    { id: 'recallNoBite', description: 'Подзыв без хватки (+штрафы за сек)', points: 5 },
-    { id: 'noReturn30s', description: 'Не подходит к проводнику за 30 сек', points: 10 },
-    { id: 'actionsAfter', description: 'Любые нерегламентированные действия после завершения упражнения', points: 10 },
     { id: 'refusesAttack', description: 'Отказ атаковать / нет хватки', points: 50, binary: true },
     { id: 'handlerLeaves', description: 'Проводник покидает стартовую зону', points: 50, binary: true },
     { id: 'training', description: 'Использует атаку для тренировки', points: 50, binary: true },
-    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, binary: true },
-    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, binary: true },
   ]
 }
 

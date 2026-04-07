@@ -127,6 +127,46 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
     onChange({ ...input, penalties: existing })
   }
 
+  const hasPhasedPenalties = definition.penaltyTable.some((r) => r.appliesTo)
+  const globalPenalties = definition.penaltyTable.filter((r) => !r.appliesTo)
+
+  const renderComponentWithPenalties = (comp: (typeof breakdown)[number]) => {
+    const phasePenalties = definition.penaltyTable.filter((r) => r.appliesTo === comp.id)
+    const isEditable = !comp.fixed
+
+    return (
+      <div key={comp.id} className="space-y-2">
+        <div className="grid gap-1">
+          <Label className="text-xs text-muted-foreground">{comp.label}</Label>
+          {isEditable ? (
+            <Input
+              type="number"
+              min={0}
+              max={comp.maxScore}
+              step="any"
+              disabled={!!zeroedBy}
+              value={input.componentScores[comp.id] ?? comp.maxScore}
+              onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+              className="h-9"
+            />
+          ) : (
+            <p className="text-sm font-medium">{comp.maxScore}</p>
+          )}
+        </div>
+        {phasePenalties.length > 0 && (
+          <PenaltyGroup
+            rules={phasePenalties}
+            level={level}
+            maxScore={maxScore}
+            zeroedBy={!!zeroedBy}
+            getPenaltyCount={getPenaltyCount}
+            onUpdate={updatePenalty}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -138,47 +178,77 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {editableComponents.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {editableComponents.map((comp) => (
-              <div key={comp.id} className="grid gap-1">
-                <Label className="text-xs text-muted-foreground">
-                  {comp.label}
-                </Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={comp.maxScore}
-                  step="any"
-                  disabled={!!zeroedBy}
-                  value={input.componentScores[comp.id] ?? comp.maxScore}
-                  onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
-                  className="h-9"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {definition.penaltyTable.length > 0 && (
+        {hasPhasedPenalties ? (
           <>
-            {editableComponents.length > 0 && <Separator />}
-            <div>
-              <p className="text-sm font-medium mb-2">Штрафы</p>
-              {zeroedBy && (
-                <p className="text-xs text-destructive mb-2">
-                  Упражнение обнулено: {zeroedBy.description}
-                </p>
-              )}
-              <PenaltyGroup
-                rules={definition.penaltyTable}
-                level={level}
-                maxScore={maxScore}
-                zeroedBy={!!zeroedBy}
-                getPenaltyCount={getPenaltyCount}
-                onUpdate={updatePenalty}
-              />
+            {zeroedBy && (
+              <p className="text-xs text-destructive">
+                Упражнение обнулено: {zeroedBy.description}
+              </p>
+            )}
+            <div className="space-y-4">
+              {breakdown.map(renderComponentWithPenalties)}
             </div>
+            {globalPenalties.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <p className="text-sm font-medium mb-2">Общие штрафы</p>
+                  <PenaltyGroup
+                    rules={globalPenalties}
+                    level={level}
+                    maxScore={maxScore}
+                    zeroedBy={!!zeroedBy}
+                    getPenaltyCount={getPenaltyCount}
+                    onUpdate={updatePenalty}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {editableComponents.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {editableComponents.map((comp) => (
+                  <div key={comp.id} className="grid gap-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {comp.label}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={comp.maxScore}
+                      step="any"
+                      disabled={!!zeroedBy}
+                      value={input.componentScores[comp.id] ?? comp.maxScore}
+                      onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+                      className="h-9"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            {definition.penaltyTable.length > 0 && (
+              <>
+                {editableComponents.length > 0 && <Separator />}
+                <div>
+                  <p className="text-sm font-medium mb-2">Штрафы</p>
+                  {zeroedBy && (
+                    <p className="text-xs text-destructive mb-2">
+                      Упражнение обнулено: {zeroedBy.description}
+                    </p>
+                  )}
+                  <PenaltyGroup
+                    rules={definition.penaltyTable}
+                    level={level}
+                    maxScore={maxScore}
+                    zeroedBy={!!zeroedBy}
+                    getPenaltyCount={getPenaltyCount}
+                    onUpdate={updatePenalty}
+                  />
+                </div>
+              </>
+            )}
           </>
         )}
 

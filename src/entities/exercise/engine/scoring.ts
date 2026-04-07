@@ -18,19 +18,30 @@ export function calculateExerciseScore(
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   const breakdown = definition.scoringBreakdown(level)
 
+  const scopedPenaltySums = new Map<string, number>()
+  let unscopedPenaltyTotal = 0
+
+  for (const entry of input.penalties) {
+    const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
+    if (!rule) continue
+    const amount = getPenaltyPoints(rule, level) * entry.count
+    if (rule.appliesTo) {
+      scopedPenaltySums.set(rule.appliesTo, (scopedPenaltySums.get(rule.appliesTo) ?? 0) + amount)
+    } else {
+      unscopedPenaltyTotal += amount
+    }
+  }
+
   const componentTotal = breakdown.reduce((sum, comp) => {
-    const value = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
-    return sum + value
+    const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
+    const scopedPenalty = scopedPenaltySums.get(comp.id) ?? 0
+    return sum + Math.max(base - scopedPenalty, 0)
   }, 0)
   const rawScore = Math.min(componentTotal, maxScore)
 
-  const penaltyTotal = input.penalties.reduce((sum, entry) => {
-    const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
-    if (!rule) return sum
-    return sum + getPenaltyPoints(rule, level) * entry.count
-  }, 0)
+  const penaltyTotal = unscopedPenaltyTotal + [...scopedPenaltySums.values()].reduce((a, b) => a + b, 0)
 
-  const scoreAfterPenalties = Math.max(rawScore - penaltyTotal, 0)
+  const scoreAfterPenalties = Math.max(rawScore - unscopedPenaltyTotal, 0)
 
   const ovDeduction = Math.min(input.ovPenalty, maxScore * 0.1)
 
