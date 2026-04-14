@@ -218,7 +218,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     getMaxScore: () => 30,
     scoringBreakdown: () => [
       { id: 'start', label: 'Старт', maxScore: 10, fixed: true },
-      { id: 'pursuit', label: 'Атака (рассчитывается)', maxScore: 20, fixed: true },
+      { id: 'pursuit', label: 'Атака (рассчитывается)', maxScore: 20, readonly: true },
     ],
     penaltyTable: [
       { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 10 },

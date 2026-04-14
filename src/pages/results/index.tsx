@@ -8,7 +8,7 @@ import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipantsByCompetition } from '@/entities/participant/model/queries'
 import { useScoresByCompetition } from '@/entities/score/model/queries'
 import { getExerciseDefinition } from '@/entities/exercise/config'
-import { calculateExerciseScore, calculateCompetitionTotal, rankParticipants } from '@/entities/exercise/engine'
+import { applyDerivedInputs, calculateExerciseScore, calculateCompetitionTotal, rankParticipants } from '@/entities/exercise/engine'
 import type { ParticipantResult, RankedEntry } from '@/entities/score/types'
 import type { Participant } from '@/entities/participant/types'
 import type { CompetitionLevel } from '@/shared/types'
@@ -77,7 +77,8 @@ export function ResultsPage() {
 
       const level = participant.level
 
-      const scores = record.inputs
+      const effectiveInputs = applyDerivedInputs(record.inputs, level)
+      const scores = effectiveInputs
         .map((input) => {
           const def = getExerciseDefinition(input.exerciseId)
           if (!def) return null

@@ -12,6 +12,8 @@ export type ScoringComponent = {
   maxScore: number
   /** Балл всегда равен maxScore, ввод не нужен — снижение только через штрафы/ОВ */
   fixed?: boolean
+  /** Балл рассчитывается автоматически (ввод судьи заблокирован) */
+  readonly?: boolean
 }
 
 export type PenaltyRule = {

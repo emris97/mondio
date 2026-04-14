@@ -89,7 +89,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   const score = calculateExerciseScore(input, definition, level)
 
-  const editableComponents = breakdown.filter((c) => !c.fixed)
+  const editableComponents = breakdown.filter((c) => !c.fixed && !c.readonly)
 
   const getPenaltyRule = (penaltyId: string) => {
     return definition.penaltyTable.find((r) => r.id === penaltyId)
@@ -155,8 +155,8 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   ) => {
     const showHeader = options?.showHeader ?? true
     const phasePenalties = definition.penaltyTable.filter((r) => r.appliesTo === comp.id)
-    const isEditable = !comp.fixed
-    const base = isEditable ? (input.componentScores[comp.id] ?? comp.maxScore) : comp.maxScore
+    const isEditable = !comp.fixed && !comp.readonly
+    const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
     const phasePenaltyTotal = getPhasePenaltyTotal(comp.id)
     const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
 
@@ -177,13 +177,17 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
               type="number"
               min={0}
               max={comp.maxScore}
-              step="any"
+              step={1}
               disabled={!!zeroedBy}
               value={input.componentScores[comp.id] ?? comp.maxScore}
-              onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+              onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
               className="h-9"
             />
           </div>
+        ) : comp.readonly ? (
+          <p className="text-xs text-muted-foreground">
+            Балл фазы: <span className="font-medium text-foreground">{Math.round(input.componentScores[comp.id] ?? comp.maxScore)}</span>
+          </p>
         ) : null}
           {phasePenalties.length > 0 && phasePenaltyTotal > 0 && (
             <p className="text-xs text-muted-foreground">
@@ -233,8 +237,8 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
             <Tabs defaultValue={getDefaultPhaseTab()} className="gap-3">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
-                  const isEditable = !comp.fixed
-                  const base = isEditable ? (input.componentScores[comp.id] ?? comp.maxScore) : comp.maxScore
+                  const isEditable = !comp.fixed && !comp.readonly
+                  const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
                   const phasePenaltyTotal = getPhasePenaltyTotal(comp.id)
                   const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
                   return (
@@ -286,10 +290,10 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                       type="number"
                       min={0}
                       max={comp.maxScore}
-                      step="any"
+                      step={1}
                       disabled={!!zeroedBy}
                       value={input.componentScores[comp.id] ?? comp.maxScore}
-                      onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+                      onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
                       className="h-9"
                     />
                   </div>
@@ -325,18 +329,18 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           <div className="grid gap-1">
             <Label className="text-xs text-muted-foreground">
               ОВ-штраф{' '}
-              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1 * 10) / 10})</span>
+              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1)})</span>
             </Label>
             <Input
               type="number"
               min={0}
-              max={maxScore * 0.1}
-              step={0.5}
+              max={Math.round(maxScore * 0.1)}
+              step={1}
               disabled={!!zeroedBy}
-              value={input.ovPenalty}
+              value={Math.round(input.ovPenalty)}
               onChange={(e) => {
-                const value = Math.round((Number(e.target.value) || 0) * 10) / 10
-                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), maxScore * 0.1) })
+                const value = Math.round(Number(e.target.value) || 0)
+                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), Math.round(maxScore * 0.1)) })
               }}
               className="h-8 w-20"
             />
