@@ -10,6 +10,34 @@ import type {
 } from '@/entities/score/types'
 import { getExerciseDefinition, getExercisesForLevel } from '../config'
 
+function roundScore(value: number): number {
+  return Math.round(value)
+}
+
+function calculateComponentRemainders(
+  input: RawExerciseInput,
+  definition: ExerciseDefinition,
+  level: CompetitionLevel,
+): Map<string, number> {
+  const breakdown = definition.scoringBreakdown(level)
+
+  const scopedPenaltySums = new Map<string, number>()
+  for (const entry of input.penalties) {
+    const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
+    if (!rule || !rule.appliesTo) continue
+    const amount = getPenaltyPoints(rule, level) * entry.count
+    scopedPenaltySums.set(rule.appliesTo, (scopedPenaltySums.get(rule.appliesTo) ?? 0) + amount)
+  }
+
+  const remainders = new Map<string, number>()
+  for (const comp of breakdown) {
+    const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
+    const scopedPenalty = scopedPenaltySums.get(comp.id) ?? 0
+    remainders.set(comp.id, Math.max(base - scopedPenalty, 0))
+  }
+  return remainders
+}
+
 export function calculateExerciseScore(
   input: RawExerciseInput,
   definition: ExerciseDefinition,
@@ -51,11 +79,58 @@ export function calculateExerciseScore(
     exerciseId: input.exerciseId,
     group: definition.group,
     maxScore,
-    rawScore,
-    penaltyTotal,
-    ovDeduction,
-    finalScore,
+    rawScore: roundScore(rawScore),
+    penaltyTotal: roundScore(penaltyTotal),
+    ovDeduction: roundScore(ovDeduction),
+    finalScore: roundScore(finalScore),
   }
+}
+
+/**
+ * Подставляет автоматически рассчитываемые компоненты (derived inputs).
+ *
+ * Сейчас это нужно для "Атака вдогонку прерванная" (III):
+ * компонент "pursuit" = (bite(лобовая с палкой) + bite(лобовая с предметами)) / 3
+ *
+ * Важно: здесь подставляется только базовый балл компонента. Штрафы/ОВ
+ * по самому упражнению продолжают применяться обычным `calculateExerciseScore`.
+ */
+export function applyDerivedInputs(
+  inputs: RawExerciseInput[],
+  level: CompetitionLevel,
+): RawExerciseInput[] {
+  if (level !== 3) return inputs
+
+  const interruptedIdx = inputs.findIndex((i) => i.exerciseId === 'pursuitInterrupted')
+  if (interruptedIdx === -1) return inputs
+
+  const defInterrupted = getExerciseDefinition('pursuitInterrupted')
+  const defStick = getExerciseDefinition('frontalAttackStick')
+  const defObjects = getExerciseDefinition('frontalAttackObjects')
+  if (!defInterrupted || !defStick || !defObjects) return inputs
+
+  const stickInput = inputs.find((i) => i.exerciseId === 'frontalAttackStick')
+  const objectsInput = inputs.find((i) => i.exerciseId === 'frontalAttackObjects')
+  const interruptedInput = inputs[interruptedIdx]
+
+  const stickBite = stickInput
+    ? (calculateComponentRemainders(stickInput, defStick, level).get('bite') ?? 0)
+    : 0
+  const objectsBite = objectsInput
+    ? (calculateComponentRemainders(objectsInput, defObjects, level).get('bite') ?? 0)
+    : 0
+
+  const pursuitComponent = roundScore((stickBite + objectsBite) / 3)
+
+  const next = [...inputs]
+  next[interruptedIdx] = {
+    ...interruptedInput,
+    componentScores: {
+      ...interruptedInput.componentScores,
+      pursuit: pursuitComponent,
+    },
+  }
+  return next
 }
 
 export function calculateGroupSubtotal(
@@ -105,7 +180,7 @@ export function calculateInterruptedPursuit(
 ): number {
   const biteComponent = (frontalStickBite + frontalObjectsBite) / 3
   const totalPenalties = penalties.reduce((sum, p) => sum + p, 0)
-  return Math.max(biteComponent + startScore - totalPenalties, 0)
+  return roundScore(Math.max(biteComponent + startScore - totalPenalties, 0))
 }
 
 /**

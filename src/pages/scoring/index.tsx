@@ -7,7 +7,7 @@ import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipant } from '@/entities/participant/model/queries'
 import { useParticipantScore, useSaveScore } from '@/entities/score/model/queries'
 import { getExercisesByGroup, getExerciseDefinition, getDefaultJumpParams } from '@/entities/exercise/config'
-import { calculateExerciseScore, calculateCompetitionTotal } from '@/entities/exercise/engine'
+import { applyDerivedInputs, calculateExerciseScore, calculateCompetitionTotal } from '@/entities/exercise/engine'
 import { ExerciseForm } from './exercise-form'
 import { ScoreBreakdown } from './score-breakdown'
 import type { ExerciseGroup } from '@/shared/types'
@@ -38,13 +38,15 @@ export function ScoringPage() {
     saveScore,
   })
 
+  const derivedInputs = useMemo(() => applyDerivedInputs(inputs, level), [inputs, level])
+
   const scores = useMemo(() => {
-    return inputs.map((input) => {
+    return derivedInputs.map((input) => {
       const def = getExerciseDefinition(input.exerciseId)
       if (!def) return null
       return calculateExerciseScore(input, def, level)
     }).filter(Boolean)
-  }, [inputs, level])
+  }, [derivedInputs, level])
 
   const competitionTotal = useMemo(() => {
     return calculateCompetitionTotal(scores.filter((s) => s !== null), level)
@@ -100,6 +102,8 @@ export function ScoringPage() {
             {getExercisesByGroup(level, group).map((def) => {
               const input = inputs.find((i) => i.exerciseId === def.id)
               if (!input) return null
+              const derived = derivedInputs.find((i) => i.exerciseId === def.id)
+              const effectiveInput = derived ?? input
               const maxScore = def.getMaxScore(level, input.jumpParams)
               if (maxScore === 0) return null
               return (
@@ -107,7 +111,7 @@ export function ScoringPage() {
                   key={def.id}
                   definition={def}
                   level={level}
-                  input={input}
+                  input={effectiveInput}
                   onChange={(updated) => updateInput(def.id, updated)}
                 />
               )

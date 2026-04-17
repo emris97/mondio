@@ -12,9 +12,9 @@ function biteBreakdown(
   stopScore: number,
 ): (level: CompetitionLevel) => ScoringComponent[] {
   return (level) => [
-    { id: 'start', label: 'Старт', maxScore: startScore },
-    { id: 'bite', label: 'Хватка', maxScore: typeof biteScore === 'function' ? biteScore(level) : biteScore },
-    { id: 'stop', label: 'Прекращение и отзыв', maxScore: stopScore },
+    { id: 'start', label: 'Старт', maxScore: startScore, fixed: true },
+    { id: 'bite', label: 'Хватка', maxScore: typeof biteScore === 'function' ? biteScore(level) : biteScore, fixed: true },
+    { id: 'stop', label: 'Прекращение и отзыв', maxScore: stopScore, fixed: true },
   ]
 }
 
@@ -204,9 +204,9 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level) => (level === 1 ? 50 : 30),
     scoringBreakdown: (level) => [
-      { id: 'start', label: 'Старт', maxScore: 10 },
-      { id: 'bite', label: 'Атака', maxScore: level === 1 ? 30 : 10 },
-      { id: 'stop', label: 'Остановка и возвращение', maxScore: 10 },
+      { id: 'start', label: 'Старт', maxScore: 10, fixed: true },
+      { id: 'bite', label: 'Атака', maxScore: level === 1 ? 30 : 10, fixed: true },
+      { id: 'stop', label: 'Остановка и возвращение', maxScore: 10, fixed: true },
     ],
     penaltyTable: biteAttackPenalties(),
   },
@@ -217,8 +217,8 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [3],
     getMaxScore: () => 30,
     scoringBreakdown: () => [
-      { id: 'start', label: 'Старт', maxScore: 10 },
-      { id: 'pursuit', label: 'Атака (рассчитывается)', maxScore: 20 },
+      { id: 'start', label: 'Старт', maxScore: 10, fixed: true },
+      { id: 'pursuit', label: 'Атака (рассчитывается)', maxScore: 20, readonly: true },
     ],
     penaltyTable: [
       { id: 'earlyStartBefore', description: 'Преждевременный старт до сигнала', points: 10 },

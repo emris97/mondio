@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getPenaltyPoints, type ExerciseDefinition } from '@/entities/exercise/types'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { CompetitionLevel } from '@/shared/types'
@@ -88,10 +89,22 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   const score = calculateExerciseScore(input, definition, level)
 
-  const editableComponents = breakdown.filter((c) => !c.fixed)
+  const editableComponents = breakdown.filter((c) => !c.fixed && !c.readonly)
+
+  const getPenaltyRule = (penaltyId: string) => {
+    return definition.penaltyTable.find((r) => r.id === penaltyId)
+  }
 
   const getPenaltyCount = (penaltyId: string): number => {
     return input.penalties.find((p) => p.penaltyId === penaltyId)?.count ?? 0
+  }
+
+  const getPhasePenaltyTotal = (componentId: string): number => {
+    return input.penalties.reduce((sum, p) => {
+      const rule = getPenaltyRule(p.penaltyId)
+      if (!rule || rule.appliesTo !== componentId) return sum
+      return sum + getPenaltyPoints(rule, level) * p.count
+    }, 0)
   }
 
   const isZeroingPenalty = (ruleId: string) => {
@@ -130,29 +143,54 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const hasPhasedPenalties = definition.penaltyTable.some((r) => r.appliesTo)
   const globalPenalties = definition.penaltyTable.filter((r) => !r.appliesTo)
 
-  const renderComponentWithPenalties = (comp: (typeof breakdown)[number]) => {
+  const renderComponentWithPenalties = (
+    comp: (typeof breakdown)[number],
+    options?: { showHeader?: boolean },
+  ) => {
+    const showHeader = options?.showHeader ?? true
     const phasePenalties = definition.penaltyTable.filter((r) => r.appliesTo === comp.id)
-    const isEditable = !comp.fixed
+    const isEditable = !comp.fixed && !comp.readonly
+    const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
+    const phasePenaltyTotal = getPhasePenaltyTotal(comp.id)
+    const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
 
     return (
       <div key={comp.id} className="space-y-2">
-        <div className="grid gap-1">
-          <Label className="text-xs text-muted-foreground">{comp.label}</Label>
-          {isEditable ? (
+        {showHeader && (
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs text-muted-foreground">{comp.label}</Label>
+            <Badge variant={phaseRemaining === comp.maxScore ? 'secondary' : 'default'}>
+              {phaseRemaining} / {comp.maxScore}
+            </Badge>
+          </div>
+        )}
+        {isEditable ? (
+          <div className="grid gap-1">
+            <Label className="text-xs text-muted-foreground">Балл фазы</Label>
             <Input
               type="number"
               min={0}
               max={comp.maxScore}
-              step="any"
+              step={1}
               disabled={!!zeroedBy}
               value={input.componentScores[comp.id] ?? comp.maxScore}
-              onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+              onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
               className="h-9"
             />
-          ) : (
-            <p className="text-sm font-medium">{comp.maxScore}</p>
+          </div>
+        ) : comp.readonly ? (
+          <p className="text-xs text-muted-foreground">
+            Балл фазы: <span className="font-medium text-foreground">{Math.round(input.componentScores[comp.id] ?? comp.maxScore)}</span>
+          </p>
+        ) : null}
+          {phasePenalties.length > 0 && phasePenaltyTotal > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Штрафы фазы: <span className="text-destructive">−{phasePenaltyTotal}</span>
+              {phasePenaltyTotal > base ? (
+                <span className="ml-1">(ограничено до 0)</span>
+              ) : null}
+            </p>
           )}
-        </div>
         {phasePenalties.length > 0 && (
           <PenaltyGroup
             rules={phasePenalties}
@@ -165,6 +203,11 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         )}
       </div>
     )
+  }
+
+  const getDefaultPhaseTab = (): string => {
+    const withPenalty = breakdown.find((c) => getPhasePenaltyTotal(c.id) > 0)
+    return withPenalty?.id ?? breakdown[0]?.id ?? 'phase'
   }
 
   return (
@@ -185,14 +228,36 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                 Упражнение обнулено: {zeroedBy.description}
               </p>
             )}
-            <div className="space-y-4">
-              {breakdown.map(renderComponentWithPenalties)}
-            </div>
+            <Tabs defaultValue={getDefaultPhaseTab()} className="gap-3">
+              <TabsList className="w-full" variant="line">
+                {breakdown.map((comp) => {
+                  const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
+                  const phasePenaltyTotal = getPhasePenaltyTotal(comp.id)
+                  const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
+                  return (
+                    <TabsTrigger key={comp.id} value={comp.id} className="justify-between px-2">
+                      <span className="truncate">{comp.label}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {phaseRemaining}/{comp.maxScore}
+                      </span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+              {breakdown.map((comp) => (
+                <TabsContent key={comp.id} value={comp.id} className="mt-1">
+                  {renderComponentWithPenalties(comp, { showHeader: false })}
+                </TabsContent>
+              ))}
+            </Tabs>
             {globalPenalties.length > 0 && (
               <>
                 <Separator />
                 <div>
-                  <p className="text-sm font-medium mb-2">Общие штрафы</p>
+                  <div className="flex items-baseline justify-between gap-2 mb-2">
+                    <p className="text-sm font-medium">Общие штрафы</p>
+                    <p className="text-xs text-muted-foreground">вычитаются из итога упражнения</p>
+                  </div>
                   <PenaltyGroup
                     rules={globalPenalties}
                     level={level}
@@ -218,10 +283,10 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                       type="number"
                       min={0}
                       max={comp.maxScore}
-                      step="any"
+                      step={1}
                       disabled={!!zeroedBy}
                       value={input.componentScores[comp.id] ?? comp.maxScore}
-                      onChange={(e) => updateComponent(comp.id, Math.min(Number(e.target.value) || 0, comp.maxScore))}
+                      onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
                       className="h-9"
                     />
                   </div>
@@ -257,18 +322,18 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           <div className="grid gap-1">
             <Label className="text-xs text-muted-foreground">
               ОВ-штраф{' '}
-              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1 * 10) / 10})</span>
+              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1)})</span>
             </Label>
             <Input
               type="number"
               min={0}
-              max={maxScore * 0.1}
-              step={0.5}
+              max={Math.round(maxScore * 0.1)}
+              step={1}
               disabled={!!zeroedBy}
-              value={input.ovPenalty}
+              value={Math.round(input.ovPenalty)}
               onChange={(e) => {
-                const value = Math.round((Number(e.target.value) || 0) * 10) / 10
-                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), maxScore * 0.1) })
+                const value = Math.round(Number(e.target.value) || 0)
+                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), Math.round(maxScore * 0.1)) })
               }}
               className="h-8 w-20"
             />

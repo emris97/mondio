@@ -4,6 +4,7 @@ import {
   calculateGroupSubtotal,
   calculateCompetitionTotal,
   calculateInterruptedPursuit,
+  applyDerivedInputs,
   rankParticipants,
   createEmptyInputsForLevel,
   mergeJumpParams,
@@ -433,6 +434,27 @@ describe('calculateInterruptedPursuit', () => {
   it('не уходит в минус', () => {
     const result = calculateInterruptedPursuit(0, 0, 0, [50])
     expect(result).toBe(0)
+  })
+})
+
+describe('applyDerivedInputs', () => {
+  it('подставляет pursuit=(biteStick+biteObjects)/3 для прерванной атаки (III)', () => {
+    const inputs = createEmptyInputsForLevel(3)
+      .map((i) => {
+        if (i.exerciseId === 'frontalAttackStick') {
+          // bite=30, quickRegrips (1×2) → 28
+          return { ...i, penalties: [{ penaltyId: 'quickRegrips', count: 2 }], ovPenalty: 0 }
+        }
+        if (i.exerciseId === 'frontalAttackObjects') {
+          // bite=30, quickRegrips (1×4) → 26
+          return { ...i, penalties: [{ penaltyId: 'quickRegrips', count: 4 }], ovPenalty: 0 }
+        }
+        return i
+      })
+
+    const derived = applyDerivedInputs(inputs, 3)
+    const interrupted = derived.find((i) => i.exerciseId === 'pursuitInterrupted')!
+    expect(interrupted.componentScores['pursuit']).toBe(Math.round((28 + 26) / 3))
   })
 })
 

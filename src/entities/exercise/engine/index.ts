@@ -3,6 +3,7 @@ export {
   calculateGroupSubtotal,
   calculateCompetitionTotal,
   calculateInterruptedPursuit,
+  applyDerivedInputs,
   rankParticipants,
   createEmptyInputsForLevel,
   mergeJumpParams,
