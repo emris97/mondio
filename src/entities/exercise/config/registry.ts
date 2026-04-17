@@ -29,7 +29,8 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     scoringBreakdown: simpleScoringBreakdown('Хождение рядом', 6),
     penaltyTable: [
       { id: 'deviation', description: 'Забегает/отстаёт/уходит в сторону', points: 0.5, perUnit: true, unitLabel: 'раз' },
-      { id: 'leave', description: 'Уходит / не следует', points: 6, binary: true },
+      { id: 'leave', description: 'Уходит / не следует (>2 длины корпуса)', points: 6, binary: true },
+      { id: 'routeError', description: 'Проводник ошибается маршрутом (избегает усложнения)', points: 6, binary: true },
     ],
   },
   {
@@ -64,6 +65,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'earlyStartAfter', description: 'Преждевременный старт после разрешения', points: 2, binary: true },
       { id: 'noFinish', description: 'Не пересекает финишной линии', points: 12, binary: true },
       { id: 'extraRecall', description: 'Доп. команда подзыва', points: 2, perUnit: true, unitLabel: 'раз' },
+      { id: 'noReturn20s', description: 'Не возвращается за 20 сек', points: 12, binary: true },
     ],
   },
   {
@@ -81,7 +83,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'noExecute', description: 'Не выполняет команду', points: 3 },
       { id: 'crawlToHandler', description: 'Движение к хозяину, за метр', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'extraCmd', description: 'Доп. команда, за каждую', points: 1, perUnit: true, unitLabel: 'раз' },
-      { id: 'earlyReturn', description: 'Приход к хозяину до окончания (потеря подзыва)', points: 2 },
+      { id: 'earlyReturn', description: 'Приход к хозяину до окончания (потеря подзыва)', points: 2, pointsByLevel: { 1: 1 } },
     ],
   },
   {
@@ -95,8 +97,11 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     ],
     penaltyTable: [
       { id: 'eat', description: 'Лижет/ест/берёт лакомство', points: 10, pointsByLevel: { 1: 5 }, binary: true },
-      { id: 'moveAway', description: 'Отходит от лакомства, за метр', points: 1, perUnit: true, unitLabel: 'м' },
+      { id: 'moveAway', description: 'Отходит от лакомства, за метр (до 3 м)', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'handlerIntervenes', description: 'Проводник вмешивается', points: 10, pointsByLevel: { 1: 5 }, binary: true },
+      { id: 'moveDuring', description: 'Перемещается во время упражнения, за метр (до 3 м)', points: 1, perUnit: true, unitLabel: 'м' },
+      { id: 'moveFar', description: 'Перемещается свыше 3 м', points: 10, pointsByLevel: { 1: 5 }, binary: true },
+      { id: 'moveOnReturn', description: 'Перемещается при возвращении проводника', points: 2, binary: true },
     ],
   },
   {
@@ -115,6 +120,9 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'chewing', description: 'Жуёт/играет с предметом', points: 1, binary: true },
       { id: 'drop', description: 'Роняет предмет, за раз', points: 1, perUnit: true, unitLabel: 'раз' },
       { id: 'notSitting', description: 'Передаёт не из положения сидя', points: 1, binary: true },
+      { id: 'dropAtFeet', description: 'Бросает предмет у ног, проводник поднимает', points: 2, binary: true },
+      { id: 'handlerCantReach', description: 'Проводник не может поднять, оставаясь на месте', points: 12, binary: true },
+      { id: 'handlerMoves', description: 'Проводник шевелится при возвращении собаки', points: 12, binary: true },
     ],
   },
   {
@@ -136,6 +144,13 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'leaveArea', description: 'Покидает круг 2 м до возвращения', points: 15, binary: true },
       { id: 'crawlInArea', description: 'Перемещение в круге 2 м, за метр', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'wrongItem', description: 'Ошибка с выбором предмета', points: 15, binary: true },
+      { id: 'showsItem', description: 'Проводник показывает брусок собаке', points: 15, binary: true },
+      { id: 'dropAtFeet', description: 'Бросает предмет у ног, проводник поднимает', points: 2, binary: true },
+      { id: 'handlerMoves', description: 'Проводник двигается при возвращении собаки', points: 15, binary: true },
+      { id: 'handlerCantReach', description: 'Проводник вынужден сдвинуться с места', points: 15, binary: true },
+      { id: 'handlerPocketEarly', description: 'Рука в кармане до выкладки предмета', points: 15, binary: true },
+      { id: 'wrongPlacement', description: 'Неправильная выкладка (не спиной к собаке)', points: 15, binary: true },
+      { id: 'unauthorizedManipulation', description: 'Неразрешённые манипуляции с предметом', points: 15, binary: true },
     ],
   },
 
