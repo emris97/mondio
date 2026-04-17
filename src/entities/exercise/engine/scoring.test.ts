@@ -45,6 +45,22 @@ describe('calculateExerciseScore', () => {
     expect(result.finalScore).toBe(4)
   })
 
+  it('хождение рядом: один штраф 0.5 даёт 5.5, а не округление итога до 6', () => {
+    const def = getExerciseDefinition('heeling')!
+    const result = calculateExerciseScore(
+      {
+        exerciseId: 'heeling',
+        componentScores: { total: 6 },
+        penalties: [{ penaltyId: 'deviation', count: 1 }],
+        ovPenalty: 0,
+      },
+      def,
+      1,
+    )
+    expect(result.penaltyTotal).toBe(0.5)
+    expect(result.finalScore).toBe(5.5)
+  })
+
   it('не даёт итогу уйти в минус', () => {
     const def = getExerciseDefinition('heeling')!
     const result = calculateExerciseScore(

@@ -10,8 +10,9 @@ import type {
 } from '@/entities/score/types'
 import { getExerciseDefinition, getExercisesForLevel } from '../config'
 
+/** Округление до одного знака после запятой (половинные штрафы и др.) */
 function roundScore(value: number): number {
-  return Math.round(value)
+  return Math.round(value * 10) / 10
 }
 
 function calculateComponentRemainders(

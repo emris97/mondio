@@ -87,6 +87,10 @@ type Props = {
 export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const breakdown = definition.scoringBreakdown(level)
   const maxScore = definition.getMaxScore(level, input.jumpParams)
+  /** Совпадает с движком: `Math.min(ovPenalty, maxScore * 0.1)` */
+  const maxOvDeduction = maxScore * 0.1
+  /** Для подписи — один знак, без ошибки `Math.round(0.6) === 1` */
+  const maxOvLabel = Math.round(maxOvDeduction * 10) / 10
   const score = calculateExerciseScore(input, definition, level)
 
   const editableComponents = breakdown.filter((c) => !c.fixed && !c.readonly)
@@ -322,18 +326,18 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           <div className="grid gap-1">
             <Label className="text-xs text-muted-foreground">
               ОВ-штраф{' '}
-              <span className="font-medium text-foreground">(макс. {Math.round(maxScore * 0.1)})</span>
+              <span className="font-medium text-foreground">(макс. {maxOvLabel})</span>
             </Label>
             <Input
               type="number"
               min={0}
-              max={Math.round(maxScore * 0.1)}
-              step={1}
+              max={maxOvDeduction}
+              step={0.1}
               disabled={!!zeroedBy}
-              value={Math.round(input.ovPenalty)}
+              value={input.ovPenalty}
               onChange={(e) => {
-                const value = Math.round(Number(e.target.value) || 0)
-                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), Math.round(maxScore * 0.1)) })
+                const value = Math.round((Number(e.target.value) || 0) * 10) / 10
+                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), maxOvDeduction) })
               }}
               className="h-8 w-20"
             />
