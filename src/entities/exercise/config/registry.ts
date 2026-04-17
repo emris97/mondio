@@ -201,7 +201,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [1, 2, 3],
     getMaxScore: (level) => (level === 2 ? 40 : 50),
     scoringBreakdown: biteBreakdown(10, (lvl) => (lvl === 2 ? 20 : 30), 10),
-    penaltyTable: biteAttackPenalties(),
+    penaltyTable: frontalAttackPenalties(),
   },
   {
     id: 'frontalAttackObjects',
@@ -210,7 +210,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     levels: [2, 3],
     getMaxScore: (level) => (level === 2 ? 40 : 50),
     scoringBreakdown: biteBreakdown(10, (lvl) => (lvl === 2 ? 20 : 30), 10),
-    penaltyTable: biteAttackPenalties(),
+    penaltyTable: frontalAttackPenalties(),
   },
   {
     id: 'pursuitBite',
@@ -223,7 +223,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'bite', label: 'Атака', maxScore: level === 1 ? 30 : 10, fixed: true },
       { id: 'stop', label: 'Остановка и возвращение', maxScore: 10, fixed: true },
     ],
-    penaltyTable: biteAttackPenalties(),
+    penaltyTable: pursuitBitePenalties(),
   },
   {
     id: 'pursuitInterrupted',
@@ -284,6 +284,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'handlerSpeaks', description: 'Проводник обращается после старта', points: 30, binary: true },
       { id: 'earlyBiteMeeting', description: 'Кусает до/во время встречи', points: 30, binary: true },
       { id: 'earlyBiteMeters', description: 'Кусает после встречи, до нападения, за метр', points: 2, perUnit: true, unitLabel: 'м' },
+      { id: 'noBitePerSecond', description: 'Вне хватки во время упражнения, за секунду', points: 2, perUnit: true, unitLabel: 'сек' },
       { id: 'leavesHandler', description: 'Отходит >1 м и не нападает, за метр', points: 1, perUnit: true, unitLabel: 'м' },
       { id: 'leaves10m', description: 'Уходит на >10 м', points: 30, binary: true },
       { id: 'attacksBystander', description: 'Нападает на постороннего', points: 30, binary: true },
@@ -330,16 +331,17 @@ function jumpPenalties() {
   ]
 }
 
-function biteAttackPenalties() {
+function frontalAttackPenalties() {
   return [
     // --- Старт ---
-    { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (−5 от ОВ)', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (−5 из ОВ)', points: 10, appliesTo: 'start' },
     { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 5, appliesTo: 'start' },
     { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 10, appliesTo: 'start' },
-    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, binary: true, appliesTo: 'start' },
-    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, binary: true, appliesTo: 'start' },
+    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, pointsByLevel: { 1: 0 }, binary: true, appliesTo: 'start' },
+    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, pointsByLevel: { 1: 0, 2: 10 }, binary: true, appliesTo: 'start' },
+    { id: 'startForwardMeters', description: 'Движение вперёд на старте, за метр (до 10 м)', points: 1, perUnit: true, unitLabel: 'м', appliesTo: 'start' },
     // --- Хватка ---
-    { id: 'noBitePerSecond', description: 'Отсутствие хватки, за секунду', points: 3, perUnit: true, unitLabel: 'сек', appliesTo: 'bite' },
+    { id: 'noBitePerSecond', description: 'Отсутствие хватки, за секунду', points: 3, pointsByLevel: { 2: 2 }, perUnit: true, unitLabel: 'сек', appliesTo: 'bite' },
     { id: 'quickRegrips', description: 'Быстрые перехваты', points: 1, perUnit: true, unitLabel: 'раз', appliesTo: 'bite' },
     // --- Прекращение и отзыв ---
     { id: 'holdAfterStop', description: 'Удерживает после команды, за сек', points: 2, perUnit: true, unitLabel: 'сек', appliesTo: 'stop' },
@@ -347,13 +349,42 @@ function biteAttackPenalties() {
     { id: 'extraRecall', description: 'Доп. команда подзыва', points: 5, appliesTo: 'stop' },
     { id: 'recallNoBite', description: 'Подзыв без хватки (+штрафы за сек)', points: 5, appliesTo: 'stop' },
     { id: 'noReturn30s', description: 'Не подходит к проводнику за 30 сек', points: 10, appliesTo: 'stop' },
-    { id: 'actionsAfter', description: 'Любые нерегламентированные действия после завершения упражнения', points: 10, appliesTo: 'stop' },
+    { id: 'actionsAfter', description: 'Нерегламентированные действия после завершения', points: 10, appliesTo: 'stop' },
     // --- Общие (обнуляют упражнение) ---
-    { id: 'earlyStartRepeat', description: 'Повторный преждевр. старт до сигнала', points: 50, binary: true },
-    { id: 'unauthorizedActions', description: 'Нерегламентированные действия', points: 50, binary: true },
-    { id: 'refusesAttack', description: 'Отказ атаковать / нет хватки', points: 50, binary: true },
-    { id: 'handlerLeaves', description: 'Проводник покидает стартовую зону', points: 50, binary: true },
-    { id: 'training', description: 'Использует атаку для тренировки', points: 50, binary: true },
+    { id: 'earlyStartRepeat', description: 'Повторный преждевр. старт до сигнала', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'unauthorizedActions', description: 'Нерегламентированные действия', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'refusesAttack', description: 'Отказ атаковать / нет хватки', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'handlerLeaves', description: 'Проводник покидает стартовую зону', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'training', description: 'Использует атаку для тренировки', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+  ]
+}
+
+function pursuitBitePenalties() {
+  return [
+    // --- Старт ---
+    { id: 'earlyStartBefore', description: 'Преждевр. старт до сигнала (−5 из ОВ)', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartAfter', description: 'Преждевр. старт после сигнала', points: 5, appliesTo: 'start' },
+    { id: 'extraSendCmd', description: 'Доп. команда посыла', points: 10, appliesTo: 'start' },
+    { id: 'hesitationObstacle', description: 'Нерешительность перед препятствием', points: 5, pointsByLevel: { 1: 0 }, binary: true, appliesTo: 'start' },
+    { id: 'obstacleBypass', description: 'Обход препятствия', points: 15, pointsByLevel: { 1: 0, 2: 10 }, binary: true, appliesTo: 'start' },
+    { id: 'startForwardMeters', description: 'Движение вперёд на старте, за метр (до 10 м)', points: 1, perUnit: true, unitLabel: 'м', appliesTo: 'start' },
+    // --- Хватка ---
+    // MR-1: 3 б/сек, MR-2 и MR-3: 1 б/сек (правило §VI.3)
+    { id: 'noBitePerSecond', description: 'Отсутствие хватки, за секунду', points: 3, pointsByLevel: { 2: 1, 3: 1 }, perUnit: true, unitLabel: 'сек', appliesTo: 'bite' },
+    { id: 'quickRegrips', description: 'Быстрые перехваты', points: 1, perUnit: true, unitLabel: 'раз', appliesTo: 'bite' },
+    // --- Прекращение и отзыв ---
+    { id: 'holdAfterStop', description: 'Удерживает после команды, за сек', points: 2, perUnit: true, unitLabel: 'сек', appliesTo: 'stop' },
+    { id: 'biteAfterStop', description: 'Кусает после прекращения', points: 2, perUnit: true, unitLabel: 'раз', appliesTo: 'stop' },
+    { id: 'extraRecall', description: 'Доп. команда подзыва', points: 5, appliesTo: 'stop' },
+    { id: 'recallNoBite', description: 'Подзыв без хватки (+штрафы за сек)', points: 5, appliesTo: 'stop' },
+    { id: 'noReturn30s', description: 'Не подходит к проводнику за 30 сек', points: 10, appliesTo: 'stop' },
+    { id: 'actionsAfter', description: 'Нерегламентированные действия после завершения', points: 10, appliesTo: 'stop' },
+    // --- Общие (обнуляют упражнение) ---
+    { id: 'earlyStartRepeat', description: 'Повторный преждевр. старт до сигнала', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'unauthorizedActions', description: 'Нерегламентированные действия', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'refusesAttack', description: 'Отказ атаковать / нет хватки', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'handlerLeaves', description: 'Проводник покидает стартовую зону', points: 50, pointsByLevel: { 2: 40 }, binary: true },
+    { id: 'training', description: 'Использует атаку для тренировки', points: 50, pointsByLevel: { 2: 40 }, binary: true },
   ]
 }
 
