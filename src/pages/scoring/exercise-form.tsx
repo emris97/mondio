@@ -99,12 +99,6 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
     return input.penalties.find((p) => p.penaltyId === penaltyId)?.count ?? 0
   }
 
-  const getPenaltyAmount = (penaltyId: string): number => {
-    const rule = getPenaltyRule(penaltyId)
-    if (!rule) return 0
-    return getPenaltyPoints(rule, level) * getPenaltyCount(penaltyId)
-  }
-
   const getPhasePenaltyTotal = (componentId: string): number => {
     return input.penalties.reduce((sum, p) => {
       const rule = getPenaltyRule(p.penaltyId)
@@ -237,7 +231,6 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
             <Tabs defaultValue={getDefaultPhaseTab()} className="gap-3">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
-                  const isEditable = !comp.fixed && !comp.readonly
                   const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
                   const phasePenaltyTotal = getPhasePenaltyTotal(comp.id)
                   const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
