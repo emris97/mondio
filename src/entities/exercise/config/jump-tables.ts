@@ -19,9 +19,9 @@ const longJumpScoreTable: JumpScoreTable = {
 }
 
 const palisadeScoreTable: JumpScoreTable = {
-  1.0: { 1: 15, 2: 12, 3: 12 },
-  1.1: { 2: 16, 3: 16 },
-  1.2: { 2: 20, 3: 20 },
+  1.0: { 1: 15, 2: 16, 3: 12 },
+  1.1: { 2: 20, 3: 16 },
+  1.2: { 3: 20 },
 }
 
 export function getWallMaxScore(level: CompetitionLevel, height?: number): number {
