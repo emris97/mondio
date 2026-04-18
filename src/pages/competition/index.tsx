@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipantsByCompetition, useDeleteParticipant } from '@/entities/participant/model/queries'
 import { AddParticipantDialog } from './add-participant-dialog'
+import { ExerciseOrderDialog } from './exercise-order-dialog'
 import type { CompetitionLevel } from '@/shared/types'
 
 const levelLabels: Record<CompetitionLevel, string> = { 1: 'I', 2: 'II', 3: 'III' }
@@ -17,6 +18,7 @@ export function CompetitionPage() {
   const { data: participants = [] } = useParticipantsByCompetition(id)
   const deleteParticipant = useDeleteParticipant()
   const [addOpen, setAddOpen] = useState(false)
+  const [orderOpen, setOrderOpen] = useState(false)
 
   if (!competition) {
     return (
@@ -46,8 +48,11 @@ export function CompetitionPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <Button onClick={() => setAddOpen(true)}>Добавить участника</Button>
+        <Button variant="outline" onClick={() => setOrderOpen(true)}>
+          Порядок упражнений
+        </Button>
         <Link to="/competition/$id/results" params={{ id }}>
           <Button variant="outline">Результаты</Button>
         </Link>
@@ -118,6 +123,8 @@ export function CompetitionPage() {
         competitionId={id}
         nextOrder={participants.length + 1}
       />
+
+      <ExerciseOrderDialog open={orderOpen} onOpenChange={setOrderOpen} competition={competition} />
     </div>
   )
 }

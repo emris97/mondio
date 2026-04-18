@@ -1,4 +1,5 @@
-import type { CompetitionLevel } from '@/shared/types'
+import type { CompetitionLevel, ExerciseGroup, ExerciseId } from '@/shared/types'
+import { orderExerciseIds } from './exercise-order'
 import type { ExerciseDefinition, ScoringComponent } from '../types'
 import { getJumpMaxScore } from './jump-tables'
 
@@ -959,14 +960,42 @@ function pursuitBitePenalties() {
   ]
 }
 
+/** Фиксированный порядок разделов: послушание → прыжки → хватка. Внутри раздела — порядок из customFlat или реестра. */
+export const EXERCISE_GROUP_SEQUENCE: readonly ExerciseGroup[] = ['obedience', 'jumps', 'bite']
+
+export function normalizeLevelExerciseOrder(
+  level: CompetitionLevel,
+  customFlat?: ExerciseId[] | null,
+): ExerciseId[] {
+  const result: ExerciseId[] = []
+  for (const group of EXERCISE_GROUP_SEQUENCE) {
+    const registryIds = exerciseRegistry
+      .filter((e) => e.levels.includes(level) && e.group === group)
+      .map((e) => e.id)
+    const groupCustom = customFlat?.filter((id) => registryIds.includes(id)) ?? null
+    result.push(...orderExerciseIds(registryIds, groupCustom))
+  }
+  return result
+}
+
 export function getExerciseDefinition(exerciseId: string): ExerciseDefinition | undefined {
   return exerciseRegistry.find((e) => e.id === exerciseId)
 }
 
-export function getExercisesForLevel(level: CompetitionLevel): ExerciseDefinition[] {
-  return exerciseRegistry.filter((e) => e.levels.includes(level))
+export function getExercisesForLevel(
+  level: CompetitionLevel,
+  customOrder?: ExerciseId[] | null,
+): ExerciseDefinition[] {
+  const defs = exerciseRegistry.filter((e) => e.levels.includes(level))
+  const ids = normalizeLevelExerciseOrder(level, customOrder)
+  const map = new Map(defs.map((d) => [d.id, d]))
+  return ids.map((id) => map.get(id)).filter((d): d is ExerciseDefinition => d !== undefined)
 }
 
-export function getExercisesByGroup(level: CompetitionLevel, group: string): ExerciseDefinition[] {
-  return exerciseRegistry.filter((e) => e.levels.includes(level) && e.group === group)
+export function getExercisesByGroup(
+  level: CompetitionLevel,
+  group: string,
+  customOrder?: ExerciseId[] | null,
+): ExerciseDefinition[] {
+  return getExercisesForLevel(level, customOrder).filter((e) => e.group === group)
 }

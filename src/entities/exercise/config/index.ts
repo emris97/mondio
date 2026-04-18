@@ -1,4 +1,12 @@
-export { exerciseRegistry, getExerciseDefinition, getExercisesForLevel, getExercisesByGroup } from './registry'
+export {
+  exerciseRegistry,
+  getExerciseDefinition,
+  getExercisesForLevel,
+  getExercisesByGroup,
+  EXERCISE_GROUP_SEQUENCE,
+  normalizeLevelExerciseOrder,
+} from './registry'
+export { orderExerciseIds } from './exercise-order'
 export {
   getJumpMaxScore,
   getWallMaxScore,

@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { ParticipantScoreRecord } from '@/entities/score/storage-types'
-import type { CompetitionLevel } from '@/shared/types'
+import type { CompetitionLevel, ExerciseId } from '@/shared/types'
 import type { JumpParams } from '@/entities/exercise/types'
 import { createEmptyInputsForLevel, mergeJumpParams } from '@/entities/exercise/engine'
 
 type UseAutoSaveParams = {
   level: CompetitionLevel
   jumpParams: JumpParams
+  exerciseOrder?: ExerciseId[] | null
   scoreRecord: ParticipantScoreRecord | null | undefined
   participantId: string
   competitionId: string
@@ -19,7 +20,15 @@ type UseAutoSaveParams = {
   }>
 }
 
-export function useAutoSave({ level, jumpParams, scoreRecord, participantId, competitionId, saveScore }: UseAutoSaveParams) {
+export function useAutoSave({
+  level,
+  jumpParams,
+  exerciseOrder,
+  scoreRecord,
+  participantId,
+  competitionId,
+  saveScore,
+}: UseAutoSaveParams) {
   const [localInputs, setLocalInputs] = useState<RawExerciseInput[] | null>(null)
   const [loadedRecordId, setLoadedRecordId] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -34,7 +43,8 @@ export function useAutoSave({ level, jumpParams, scoreRecord, participantId, com
     }
   }
 
-  const rawInputs = localInputs ?? scoreRecord?.inputs ?? createEmptyInputsForLevel(level, jumpParams)
+  const rawInputs =
+    localInputs ?? scoreRecord?.inputs ?? createEmptyInputsForLevel(level, jumpParams, exerciseOrder)
   const inputs = useMemo(() => mergeJumpParams(rawInputs, jumpParams), [rawInputs, jumpParams])
 
   const scheduleAutoSave = useCallback(
@@ -50,13 +60,13 @@ export function useAutoSave({ level, jumpParams, scoreRecord, participantId, com
   const updateInput = useCallback(
     (exerciseId: string, updated: RawExerciseInput) => {
       setLocalInputs((prev) => {
-        const base = prev ?? createEmptyInputsForLevel(level, jumpParams)
+        const base = prev ?? createEmptyInputsForLevel(level, jumpParams, exerciseOrder)
         const next = base.map((i) => (i.exerciseId === exerciseId ? updated : i))
         scheduleAutoSave(next)
         return next
       })
     },
-    [scheduleAutoSave, level, jumpParams],
+    [scheduleAutoSave, level, jumpParams, exerciseOrder],
   )
 
   useEffect(() => {

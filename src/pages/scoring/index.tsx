@@ -28,10 +28,12 @@ export function ScoringPage() {
 
   const level = participant?.level ?? 1
   const jumpParams = participant?.jumpParams ?? getDefaultJumpParams(level)
+  const exerciseOrder = competition?.exerciseOrderByLevel?.[level]
 
   const { inputs, updateInput } = useAutoSave({
     level,
     jumpParams,
+    exerciseOrder,
     scoreRecord,
     participantId: pid,
     competitionId: id,
@@ -99,7 +101,7 @@ export function ScoringPage() {
 
         {(['obedience', 'jumps', 'bite'] as const).map((group) => (
           <TabsContent key={group} value={group} className="mt-4 space-y-4">
-            {getExercisesByGroup(level, group).map((def) => {
+            {getExercisesByGroup(level, group, exerciseOrder).map((def) => {
               const input = inputs.find((i) => i.exerciseId === def.id)
               if (!input) return null
               const derived = derivedInputs.find((i) => i.exerciseId === def.id)

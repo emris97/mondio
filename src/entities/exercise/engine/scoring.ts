@@ -1,4 +1,4 @@
-import type { CompetitionLevel, ExerciseGroup } from '@/shared/types'
+import type { CompetitionLevel, ExerciseGroup, ExerciseId } from '@/shared/types'
 import { getPenaltyPoints, type ExerciseDefinition, type JumpParams } from '../types'
 import type {
   RawExerciseInput,
@@ -214,8 +214,9 @@ export function rankParticipants(entries: ParticipantResult[]): RankedEntry[] {
 export function createEmptyInputsForLevel(
   level: CompetitionLevel,
   jumpParams?: JumpParams,
+  exerciseOrder?: ExerciseId[] | null,
 ): RawExerciseInput[] {
-  return getExercisesForLevel(level).map((def) => ({
+  return getExercisesForLevel(level, exerciseOrder).map((def) => ({
     exerciseId: def.id,
     componentScores: Object.fromEntries(
       def.scoringBreakdown(level).map((c) => [c.id, c.maxScore]),
