@@ -1,14 +1,166 @@
+import { useState } from 'react'
+import { MinusIcon, PlusIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getPenaltyDescription, getPenaltyPoints, type ExerciseDefinition } from '@/entities/exercise/types'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { getPenaltyDescription, getPenaltyPoints, type ExerciseDefinition, type PenaltyRule } from '@/entities/exercise/types'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { CompetitionLevel } from '@/shared/types'
 import { calculateExerciseScore } from '@/entities/exercise/engine'
+import { cn } from '@/lib/utils'
+import { useRepeatAdvance } from './use-repeat-advance'
+
+const MAX_PENALTY_COUNT = 999
+
+function clampRoundOv(value: number, max: number) {
+  const rounded = Math.round(value * 10) / 10
+  return Math.min(Math.max(rounded, 0), max)
+}
+
+type CountStepperProps = {
+  value: number
+  min: number
+  max: number
+  disabled?: boolean
+  onChange: (n: number) => void
+  'aria-label'?: string
+}
+
+function CountStepper({ value, min, max, disabled, onChange, 'aria-label': ariaLabel }: CountStepperProps) {
+  const dec = useRepeatAdvance(() => onChange(Math.max(value - 1, min)), {
+    disabled: disabled || value <= min,
+  })
+  const inc = useRepeatAdvance(() => onChange(Math.min(value + 1, max)), {
+    disabled: disabled || value >= max,
+  })
+
+  return (
+    <div className="flex items-center gap-1.5" role="group" aria-label={ariaLabel}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="min-h-10 min-w-10 shrink-0 touch-manipulation"
+        disabled={disabled || value <= min}
+        aria-label="Уменьшить"
+        {...dec}
+      >
+        <MinusIcon className="size-4" />
+      </Button>
+      <span className="min-w-[2.5rem] text-center text-base font-semibold tabular-nums">{value}</span>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="min-h-10 min-w-10 shrink-0 touch-manipulation"
+        disabled={disabled || value >= max}
+        aria-label="Увеличить"
+        {...inc}
+      >
+        <PlusIcon className="size-4" />
+      </Button>
+    </div>
+  )
+}
+
+type OvPenaltyFieldProps = {
+  value: number
+  max: number
+  disabled: boolean
+  onCommit: (v: number) => void
+}
+
+function OvPenaltyField({ value, max, disabled, onCommit }: OvPenaltyFieldProps) {
+  const [exactOpen, setExactOpen] = useState(false)
+  const dec = useRepeatAdvance(
+    () => {
+      onCommit(clampRoundOv(value - 0.1, max))
+    },
+    { disabled: disabled || value <= 0 },
+  )
+  const inc = useRepeatAdvance(
+    () => {
+      onCommit(clampRoundOv(value + 0.1, max))
+    },
+    { disabled: disabled || value >= max },
+  )
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5" role="group" aria-label="ОВ-штраф">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="min-h-10 min-w-10 shrink-0 touch-manipulation"
+            disabled={disabled || value <= 0}
+            aria-label="Уменьшить ОВ на 0,1"
+            {...dec}
+          >
+            <MinusIcon className="size-4" />
+          </Button>
+          <span className="min-w-[3rem] text-center text-base font-semibold tabular-nums">{value.toFixed(1)}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="min-h-10 min-w-10 shrink-0 touch-manipulation"
+            disabled={disabled || value >= max}
+            aria-label="Увеличить ОВ на 0,1"
+            {...inc}
+          >
+            <PlusIcon className="size-4" />
+          </Button>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 touch-manipulation px-2 text-xs"
+          disabled={disabled}
+          onClick={() => setExactOpen((o) => !o)}
+        >
+          {exactOpen ? 'Скрыть ввод' : 'Точное значение'}
+        </Button>
+      </div>
+      {exactOpen && (
+        <Input
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          disabled={disabled}
+          value={Number.isFinite(value) ? String(value) : ''}
+          onChange={(e) => {
+            const raw = e.target.value.replace(',', '.')
+            if (raw === '' || raw === '-' || raw === '.') {
+              onCommit(0)
+              return
+            }
+            const n = Number(raw)
+            if (Number.isNaN(n)) return
+            onCommit(clampRoundOv(n, max))
+          }}
+          className="max-w-xs font-medium tabular-nums"
+          aria-label="Точное значение ОВ-штрафа"
+        />
+      )}
+    </div>
+  )
+}
 
 type PenaltyGroupProps = {
   rules: ExerciseDefinition['penaltyTable']
@@ -23,54 +175,97 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
   const binaryRules = rules.filter((r) => r.binary)
   const countRules = rules.filter((r) => !r.binary)
 
-  const renderLabel = (rule: (typeof rules)[number]) => {
+  const renderRuleDescription = (rule: PenaltyRule) => {
     const pts = getPenaltyPoints(rule, level)
     return (
-      <span className="whitespace-pre-line text-xs text-muted-foreground leading-tight">
+      <span className="whitespace-pre-line text-xs text-muted-foreground leading-snug">
         {getPenaltyDescription(rule, level)}
-        <span className="font-medium text-foreground"> (−{pts}{rule.perUnit ? `/${rule.unitLabel}` : ''})</span>
+        <span className="font-medium text-foreground">
+          {' '}
+          (−{pts}
+          {rule.perUnit ? `/${rule.unitLabel}` : ''})
+        </span>
       </span>
     )
   }
 
-  const isDisabled = (rule: (typeof rules)[number]) => {
+  const quantityCaption = (rule: PenaltyRule, pts: number) => {
+    if (rule.perUnit && rule.unitLabel) {
+      return `Штраф −${pts} за каждую ${rule.unitLabel}`
+    }
+    return `Штраф −${pts} за каждое нарушение`
+  }
+
+  const isDisabled = (rule: PenaltyRule) => {
     const pts = getPenaltyPoints(rule, level)
     const isZeroing = rule.binary && pts >= maxScore
     return zeroedBy && !isZeroing
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {binaryRules.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {binaryRules.map((rule) => (
-            <div key={rule.id} className={`flex items-center gap-2 ${isDisabled(rule) ? 'opacity-40' : ''}`}>
-              <Checkbox
-                checked={getPenaltyCount(rule.id) > 0}
-                disabled={isDisabled(rule)}
-                onCheckedChange={(checked) => onUpdate(rule.id, checked ? 1 : 0)}
-              />
-              {renderLabel(rule)}
-            </div>
-          ))}
+        <div className="grid gap-1.5 sm:grid-cols-2">
+          {binaryRules.map((rule) => {
+            const id = `penalty-${rule.id}`
+            return (
+              <label
+                key={rule.id}
+                htmlFor={id}
+                className={cn(
+                  'flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 transition-colors',
+                  isDisabled(rule) ? 'cursor-not-allowed opacity-40' : 'hover:bg-muted/50 active:bg-muted/70',
+                )}
+              >
+                <Checkbox
+                  id={id}
+                  checked={getPenaltyCount(rule.id) > 0}
+                  disabled={isDisabled(rule)}
+                  onCheckedChange={(checked) => onUpdate(rule.id, checked ? 1 : 0)}
+                  className="shrink-0"
+                />
+                <span className="min-w-0 flex-1">{renderRuleDescription(rule)}</span>
+              </label>
+            )
+          })}
         </div>
       )}
 
       {countRules.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {countRules.map((rule) => (
-            <div key={rule.id} className={`flex items-center gap-2 ${isDisabled(rule) ? 'opacity-40' : ''}`}>
-              <Input
-                type="number"
-                min={0}
-                disabled={isDisabled(rule)}
-                value={getPenaltyCount(rule.id)}
-                onChange={(e) => onUpdate(rule.id, Math.max(Number(e.target.value) || 0, 0))}
-                className="h-8 w-16 text-center"
-              />
-              {renderLabel(rule)}
-            </div>
-          ))}
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+          {countRules.map((rule) => {
+            const count = getPenaltyCount(rule.id)
+            const pts = getPenaltyPoints(rule, level)
+            const lineTotal = pts * count
+            const disabled = isDisabled(rule)
+            return (
+              <div
+                key={rule.id}
+                className={cn(
+                  'flex flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-sm',
+                  disabled && 'pointer-events-none opacity-40',
+                )}
+              >
+                <h4 className="whitespace-pre-line text-sm font-semibold leading-tight text-foreground">
+                  {getPenaltyDescription(rule, level)}
+                </h4>
+                <p className="text-[11px] leading-snug text-muted-foreground">{quantityCaption(rule, pts)}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                  <CountStepper
+                    value={count}
+                    min={0}
+                    max={MAX_PENALTY_COUNT}
+                    disabled={disabled}
+                    onChange={(n) => onUpdate(rule.id, n)}
+                    aria-label={`Количество: ${getPenaltyDescription(rule, level)}`}
+                  />
+                  {count > 0 && (
+                    <p className="text-sm font-semibold tabular-nums text-destructive">−{lineTotal}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -85,6 +280,8 @@ type Props = {
 }
 
 export function ExerciseForm({ definition, level, input, onChange }: Props) {
+  const [resetOpen, setResetOpen] = useState(false)
+
   const breakdown = definition.scoringBreakdown(level)
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   /** Совпадает с движком: `Math.min(ovPenalty, maxScore * 0.1)` */
@@ -144,6 +341,13 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
     onChange({ ...input, penalties: existing })
   }
 
+  const hasPenaltiesOrOv = input.penalties.length > 0 || input.ovPenalty > 0
+
+  const resetPenaltiesAndOv = () => {
+    onChange({ ...input, penalties: [], ovPenalty: 0 })
+    setResetOpen(false)
+  }
+
   const hasPhasedPenalties = definition.penaltyTable.some((r) => r.appliesTo)
   const globalPenalties = definition.penaltyTable.filter((r) => !r.appliesTo)
 
@@ -159,7 +363,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
     const phaseRemaining = Math.max(base - phasePenaltyTotal, 0)
 
     return (
-      <div key={comp.id} className="space-y-2">
+      <div key={comp.id} className="space-y-1.5">
         {showHeader && (
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs text-muted-foreground">{comp.label}</Label>
@@ -169,32 +373,29 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           </div>
         )}
         {isEditable ? (
-          <div className="grid gap-1">
+          <div className="grid gap-1.5">
             <Label className="text-xs text-muted-foreground">Балл фазы</Label>
-            <Input
-              type="number"
+            <CountStepper
+              value={input.componentScores[comp.id] ?? comp.maxScore}
               min={0}
               max={comp.maxScore}
-              step={1}
               disabled={!!zeroedBy}
-              value={input.componentScores[comp.id] ?? comp.maxScore}
-              onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
-              className="h-9"
+              onChange={(n) => updateComponent(comp.id, n)}
+              aria-label={`Балл фазы: ${comp.label}`}
             />
           </div>
         ) : comp.readonly ? (
           <p className="text-xs text-muted-foreground">
-            Балл фазы: <span className="font-medium text-foreground">{Math.round(input.componentScores[comp.id] ?? comp.maxScore)}</span>
+            Балл фазы:{' '}
+            <span className="font-medium text-foreground">{Math.round(input.componentScores[comp.id] ?? comp.maxScore)}</span>
           </p>
         ) : null}
-          {phasePenalties.length > 0 && phasePenaltyTotal > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Штрафы фазы: <span className="text-destructive">−{phasePenaltyTotal}</span>
-              {phasePenaltyTotal > base ? (
-                <span className="ml-1">(ограничено до 0)</span>
-              ) : null}
-            </p>
-          )}
+        {phasePenalties.length > 0 && phasePenaltyTotal > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Штрафы фазы: <span className="text-destructive">−{phasePenaltyTotal}</span>
+            {phasePenaltyTotal > base ? <span className="ml-1">(ограничено до 0)</span> : null}
+          </p>
+        )}
         {phasePenalties.length > 0 && (
           <PenaltyGroup
             rules={phasePenalties}
@@ -216,15 +417,15 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base">{definition.name}</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base leading-tight">{definition.name}</CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={score.finalScore === maxScore ? 'default' : 'secondary'}>
             {score.finalScore} / {maxScore}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {hasPhasedPenalties ? (
           <>
             {zeroedBy && (
@@ -232,7 +433,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                 Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
               </p>
             )}
-            <Tabs defaultValue={getDefaultPhaseTab()} className="gap-3">
+            <Tabs defaultValue={getDefaultPhaseTab()} className="gap-2">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
                   const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
@@ -258,8 +459,8 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
               <>
                 <Separator />
                 <div>
-                  <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <p className="text-sm font-medium">Общие штрафы</p>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                    <p className="text-sm font-medium leading-none">Общие штрафы</p>
                     <p className="text-xs text-muted-foreground">вычитаются из итога упражнения</p>
                   </div>
                   <PenaltyGroup
@@ -277,21 +478,17 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         ) : (
           <>
             {editableComponents.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {editableComponents.map((comp) => (
-                  <div key={comp.id} className="grid gap-1">
-                    <Label className="text-xs text-muted-foreground">
-                      {comp.label}
-                    </Label>
-                    <Input
-                      type="number"
+                  <div key={comp.id} className="grid gap-1.5">
+                    <Label className="text-xs text-muted-foreground">{comp.label}</Label>
+                    <CountStepper
+                      value={input.componentScores[comp.id] ?? comp.maxScore}
                       min={0}
                       max={comp.maxScore}
-                      step={1}
                       disabled={!!zeroedBy}
-                      value={input.componentScores[comp.id] ?? comp.maxScore}
-                      onChange={(e) => updateComponent(comp.id, Math.min(Math.round(Number(e.target.value) || 0), comp.maxScore))}
-                      className="h-9"
+                      onChange={(n) => updateComponent(comp.id, n)}
+                      aria-label={`Балл: ${comp.label}`}
                     />
                   </div>
                 ))}
@@ -301,9 +498,9 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
               <>
                 {editableComponents.length > 0 && <Separator />}
                 <div>
-                  <p className="text-sm font-medium mb-2">Штрафы</p>
+                  <p className="mb-1.5 text-sm font-medium leading-none">Штрафы</p>
                   {zeroedBy && (
-                    <p className="text-xs text-destructive mb-2">
+                    <p className="mb-1.5 text-xs text-destructive">
                       Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
                     </p>
                   )}
@@ -322,34 +519,56 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
         )}
 
         <Separator />
-        <div className="flex items-center gap-4">
-          <div className="grid gap-1">
+
+        {hasPenaltiesOrOv && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" className="touch-manipulation" onClick={() => setResetOpen(true)}>
+              Сбросить штрафы и ОВ
+            </Button>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="grid min-w-0 flex-1 gap-1.5">
             <Label className="text-xs text-muted-foreground">
-              ОВ-штраф{' '}
-              <span className="font-medium text-foreground">(макс. {maxOvLabel})</span>
+              ОВ-штраф <span className="font-medium text-foreground">(макс. {maxOvLabel})</span>
             </Label>
-            <Input
-              type="number"
-              min={0}
-              max={maxOvDeduction}
-              step={0.1}
-              disabled={!!zeroedBy}
+            <OvPenaltyField
               value={input.ovPenalty}
-              onChange={(e) => {
-                const value = Math.round((Number(e.target.value) || 0) * 10) / 10
-                onChange({ ...input, ovPenalty: Math.min(Math.max(value, 0), maxOvDeduction) })
-              }}
-              className="h-8 w-20"
+              max={maxOvDeduction}
+              disabled={!!zeroedBy}
+              onCommit={(v) => onChange({ ...input, ovPenalty: v })}
             />
           </div>
-          {!zeroedBy && score.penaltyTotal > 0 && (
-            <span className="text-sm text-destructive">Штрафы: −{score.penaltyTotal}</span>
-          )}
-          {!zeroedBy && score.ovDeduction > 0 && (
-            <span className="text-sm text-destructive">ОВ: −{score.ovDeduction}</span>
-          )}
+          <div className="flex flex-col gap-0.5 sm:pt-4">
+            {!zeroedBy && score.penaltyTotal > 0 && (
+              <span className="text-xs text-destructive">Штрафы: −{score.penaltyTotal}</span>
+            )}
+            {!zeroedBy && score.ovDeduction > 0 && (
+              <span className="text-xs text-destructive">ОВ: −{score.ovDeduction}</span>
+            )}
+          </div>
         </div>
       </CardContent>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Сбросить штрафы и ОВ?</DialogTitle>
+            <DialogDescription>
+              Будут очищены все отмеченные штрафы по этому упражнению и значение ОВ-штрафа. Баллы фаз не изменятся.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setResetOpen(false)}>
+              Отмена
+            </Button>
+            <Button type="button" variant="destructive" onClick={resetPenaltiesAndOv}>
+              Сбросить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
