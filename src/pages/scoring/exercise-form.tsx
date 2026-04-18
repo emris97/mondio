@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -24,6 +24,13 @@ import { cn } from '@/lib/utils'
 import { useRepeatAdvance } from './use-repeat-advance'
 
 const MAX_PENALTY_COUNT = 999
+
+/** Базовый балл «Посыл вперёд» по зоне (правила: 12 / 8 / 4) */
+const SEND_AWAY_BASE_SCORES = [12, 8, 4] as const
+
+function isSendAwayBaseScore(n: number): n is (typeof SEND_AWAY_BASE_SCORES)[number] {
+  return (SEND_AWAY_BASE_SCORES as readonly number[]).includes(n)
+}
 
 function clampRoundOv(value: number, max: number) {
   const rounded = Math.round(value * 10) / 10
@@ -282,6 +289,17 @@ type Props = {
 export function ExerciseForm({ definition, level, input, onChange }: Props) {
   const [resetOpen, setResetOpen] = useState(false)
 
+  useEffect(() => {
+    if (definition.id !== 'sendAway') return
+    const v = input.componentScores.total ?? 12
+    if (!isSendAwayBaseScore(v)) {
+      onChange({
+        ...input,
+        componentScores: { ...input.componentScores, total: 12 },
+      })
+    }
+  }, [definition.id, input, onChange])
+
   const breakdown = definition.scoringBreakdown(level)
   const maxScore = definition.getMaxScore(level, input.jumpParams)
   /** Совпадает с движком: `Math.min(ovPenalty, maxScore * 0.1)` */
@@ -474,19 +492,45 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           <>
             {editableComponents.length > 0 && (
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {editableComponents.map((comp) => (
-                  <div key={comp.id} className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">{comp.label}</Label>
-                    <CountStepper
-                      value={input.componentScores[comp.id] ?? comp.maxScore}
-                      min={0}
-                      max={comp.maxScore}
-                      disabled={!!zeroedBy}
-                      onChange={(n) => updateComponent(comp.id, n)}
-                      aria-label={`Балл: ${comp.label}`}
-                    />
-                  </div>
-                ))}
+                {editableComponents.map((comp) => {
+                  const isSendAwayBase =
+                    definition.id === 'sendAway' && comp.id === 'total'
+                  const baseValue = input.componentScores[comp.id] ?? comp.maxScore
+                  return (
+                    <div key={comp.id} className="grid gap-1.5">
+                      <Label className="text-xs text-muted-foreground">{comp.label}</Label>
+                      {isSendAwayBase ? (
+                        <Tabs
+                          value={String(isSendAwayBaseScore(baseValue) ? baseValue : 12)}
+                          onValueChange={(v) => updateComponent(comp.id, Number(v))}
+                          className="gap-2"
+                        >
+                          <TabsList className="grid w-full grid-cols-3">
+                            {SEND_AWAY_BASE_SCORES.map((n) => (
+                              <TabsTrigger
+                                key={n}
+                                value={String(n)}
+                                disabled={!!zeroedBy}
+                                className="touch-manipulation"
+                              >
+                                {n}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </Tabs>
+                      ) : (
+                        <CountStepper
+                          value={baseValue}
+                          min={0}
+                          max={comp.maxScore}
+                          disabled={!!zeroedBy}
+                          onChange={(n) => updateComponent(comp.id, n)}
+                          aria-label={`Балл: ${comp.label}`}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
             {definition.penaltyTable.length > 0 && (

@@ -101,7 +101,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     group: 'obedience',
     levels: [1, 2, 3],
     getMaxScore: () => 12,
-    scoringBreakdown: () => [{ id: 'total', label: 'Посыл вперёд (12 / 8 / 4)', maxScore: 12 }],
+    scoringBreakdown: () => [{ id: 'total', label: 'Место пересечения линии собакой', maxScore: 12 }],
     penaltyTable: [
       { id: 'voiceAndGesture', description: 'команда, поданная одновременно голосом и жестом', points: 2, binary: true },
       { id: 'extraSendCmd', description: 'каждая дополнительная команда посыла', points: 4, perUnit: true, unitLabel: 'раз' },
