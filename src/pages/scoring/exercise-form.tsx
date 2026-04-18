@@ -428,11 +428,6 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
       <CardContent className="space-y-3">
         {hasPhasedPenalties ? (
           <>
-            {zeroedBy && (
-              <p className="text-xs text-destructive">
-                Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
-              </p>
-            )}
             <Tabs defaultValue={getDefaultPhaseTab()} className="gap-2">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
@@ -499,11 +494,6 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                 {editableComponents.length > 0 && <Separator />}
                 <div>
                   <p className="mb-1.5 text-sm font-medium leading-none">Штрафы</p>
-                  {zeroedBy && (
-                    <p className="mb-1.5 text-xs text-destructive">
-                      Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
-                    </p>
-                  )}
                   <PenaltyGroup
                     rules={definition.penaltyTable}
                     level={level}
