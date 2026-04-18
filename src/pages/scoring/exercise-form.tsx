@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { MinusIcon, PlusIcon } from 'lucide-react'
+import { ChevronDown, MinusIcon, PlusIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -434,16 +435,30 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base leading-tight">{definition.name}</CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant={score.finalScore === maxScore ? 'default' : 'secondary'}>
-            {score.finalScore} / {maxScore}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <Collapsible defaultOpen>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <CollapsibleTrigger
+              type="button"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+                'group shrink-0 text-muted-foreground hover:text-foreground',
+              )}
+              aria-label="Свернуть или развернуть упражнение"
+            >
+              <ChevronDown className="size-4 shrink-0 transition-transform duration-200 group-aria-expanded:rotate-180" />
+            </CollapsibleTrigger>
+            <CardTitle className="min-w-0 text-base leading-tight">{definition.name}</CardTitle>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge variant={score.finalScore === maxScore ? 'default' : 'secondary'}>
+              {score.finalScore} / {maxScore}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="space-y-3">
         {hasPhasedPenalties ? (
           <>
             <Tabs defaultValue={getDefaultPhaseTab()} className="gap-2">
@@ -583,9 +598,10 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
             )}
           </div>
         </div>
-      </CardContent>
+          </CardContent>
+        </CollapsibleContent>
 
-      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Сбросить штрафы и ОВ?</DialogTitle>
@@ -603,6 +619,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+      </Card>
+    </Collapsible>
   )
 }
