@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getPenaltyPoints, type ExerciseDefinition } from '@/entities/exercise/types'
+import { getPenaltyDescription, getPenaltyPoints, type ExerciseDefinition } from '@/entities/exercise/types'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { CompetitionLevel } from '@/shared/types'
 import { calculateExerciseScore } from '@/entities/exercise/engine'
@@ -26,8 +26,8 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
   const renderLabel = (rule: (typeof rules)[number]) => {
     const pts = getPenaltyPoints(rule, level)
     return (
-      <span className="text-xs text-muted-foreground leading-tight">
-        {rule.description}
+      <span className="whitespace-pre-line text-xs text-muted-foreground leading-tight">
+        {getPenaltyDescription(rule, level)}
         <span className="font-medium text-foreground"> (−{pts}{rule.perUnit ? `/${rule.unitLabel}` : ''})</span>
       </span>
     )
@@ -229,7 +229,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
           <>
             {zeroedBy && (
               <p className="text-xs text-destructive">
-                Упражнение обнулено: {zeroedBy.description}
+                Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
               </p>
             )}
             <Tabs defaultValue={getDefaultPhaseTab()} className="gap-3">
@@ -304,7 +304,7 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
                   <p className="text-sm font-medium mb-2">Штрафы</p>
                   {zeroedBy && (
                     <p className="text-xs text-destructive mb-2">
-                      Упражнение обнулено: {zeroedBy.description}
+                      Упражнение обнулено: {getPenaltyDescription(zeroedBy, level)}
                     </p>
                   )}
                   <PenaltyGroup

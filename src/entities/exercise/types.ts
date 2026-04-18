@@ -19,6 +19,8 @@ export type ScoringComponent = {
 export type PenaltyRule = {
   id: string
   description: string
+  /** Текст для уровня, если отличается от `description` (без упоминания других уровней) */
+  descriptionByLevel?: Partial<Record<CompetitionLevel, string>>
   points: number
   /** Баллы, отличающиеся по уровню (приоритет над `points`) */
   pointsByLevel?: Partial<Record<CompetitionLevel, number>>
@@ -33,6 +35,10 @@ export type PenaltyRule = {
 
 export function getPenaltyPoints(rule: PenaltyRule, level: CompetitionLevel): number {
   return rule.pointsByLevel?.[level] ?? rule.points
+}
+
+export function getPenaltyDescription(rule: PenaltyRule, level: CompetitionLevel): string {
+  return rule.descriptionByLevel?.[level] ?? rule.description
 }
 
 export type ExerciseDefinition = {
