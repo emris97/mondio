@@ -285,9 +285,19 @@ type Props = {
   level: CompetitionLevel
   input: RawExerciseInput
   onChange: (updated: RawExerciseInput) => void
+  /** Состояние «развёрнуто» снаружи — чтобы не сбрасывалось при размонтировании (вкладки) */
+  collapsibleOpen?: boolean
+  onCollapsibleOpenChange?: (open: boolean) => void
 }
 
-export function ExerciseForm({ definition, level, input, onChange }: Props) {
+export function ExerciseForm({
+  definition,
+  level,
+  input,
+  onChange,
+  collapsibleOpen,
+  onCollapsibleOpenChange,
+}: Props) {
   const [resetOpen, setResetOpen] = useState(false)
 
   useEffect(() => {
@@ -434,8 +444,13 @@ export function ExerciseForm({ definition, level, input, onChange }: Props) {
     return withPenalty?.id ?? breakdown[0]?.id ?? 'phase'
   }
 
+  const collapsibleProps =
+    onCollapsibleOpenChange != null
+      ? { open: collapsibleOpen ?? false, onOpenChange: onCollapsibleOpenChange }
+      : { defaultOpen: false as const }
+
   return (
-    <Collapsible defaultOpen>
+    <Collapsible {...collapsibleProps}>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">

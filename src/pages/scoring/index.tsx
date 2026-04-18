@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +53,9 @@ export function ScoringPage() {
   const competitionTotal = useMemo(() => {
     return calculateCompetitionTotal(scores.filter((s) => s !== null), level)
   }, [scores, level])
+
+  /** Помним свёрнутость при смене вкладок (панели вкладок размонтируются без keepMounted) */
+  const [exerciseOpenById, setExerciseOpenById] = useState<Record<string, boolean>>({})
 
   if (!competition || !participant) {
     return (
@@ -115,6 +118,10 @@ export function ScoringPage() {
                   level={level}
                   input={effectiveInput}
                   onChange={(updated) => updateInput(def.id, updated)}
+                  collapsibleOpen={exerciseOpenById[def.id] ?? false}
+                  onCollapsibleOpenChange={(open) =>
+                    setExerciseOpenById((prev) => ({ ...prev, [def.id]: open }))
+                  }
                 />
               )
             })}
