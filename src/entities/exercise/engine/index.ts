@@ -8,3 +8,8 @@ export {
   createEmptyInputsForLevel,
   mergeJumpParams,
 } from './scoring'
+export {
+  describeExercisePenalties,
+  type AppliedPenaltyLine,
+  type ExercisePenaltiesDescription,
+} from './applied-penalties'

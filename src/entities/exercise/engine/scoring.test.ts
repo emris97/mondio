@@ -10,6 +10,7 @@ import {
   mergeJumpParams,
 } from './scoring'
 import { getExerciseDefinition } from '../config'
+import { describeExercisePenalties } from './applied-penalties'
 import type { ExerciseScore, ParticipantResult, GroupSubtotal } from '@/entities/score/types'
 
 function makeGroupSubtotal(group: 'obedience' | 'jumps' | 'bite', total: number): GroupSubtotal {
@@ -512,5 +513,37 @@ describe('rankParticipants', () => {
     ]
     const ranked = rankParticipants(entries)
     expect(ranked[0].participantId).toBe('b')
+  })
+})
+
+describe('describeExercisePenalties', () => {
+  it('возвращает строки штрафов с вычитанием как в движке', () => {
+    const def = getExerciseDefinition('heeling')!
+    const input = {
+      exerciseId: 'heeling' as const,
+      componentScores: { total: 6 },
+      penalties: [{ penaltyId: 'deviation', count: 4 }],
+      ovPenalty: 0,
+    }
+    const described = describeExercisePenalties(input, def, 1)
+    expect(described.lines).toHaveLength(1)
+    expect(described.lines[0].deduction).toBe(2)
+    expect(described.lines[0].count).toBe(4)
+    expect(described.ovDeduction).toBe(0)
+  })
+
+  it('ovDeduction совпадает с calculateExerciseScore (включая clamp 10%)', () => {
+    const def = getExerciseDefinition('absence')!
+    const input = {
+      exerciseId: 'absence' as const,
+      componentScores: { total: 10 },
+      penalties: [],
+      ovPenalty: 10,
+    }
+    const described = describeExercisePenalties(input, def, 1)
+    const scored = calculateExerciseScore(input, def, 1)
+    expect(described.ovPenaltyInput).toBe(10)
+    expect(described.ovDeduction).toBe(scored.ovDeduction)
+    expect(described.ovDeduction).toBe(1)
   })
 })

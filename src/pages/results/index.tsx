@@ -4,14 +4,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCompetition } from '@/entities/competition/model/queries'
 import { useParticipantsByCompetition } from '@/entities/participant/model/queries'
 import { useScoresByCompetition } from '@/entities/score/model/queries'
 import { getExerciseDefinition } from '@/entities/exercise/config'
 import { applyDerivedInputs, calculateExerciseScore, calculateCompetitionTotal, rankParticipants } from '@/entities/exercise/engine'
-import type { ParticipantResult, RankedEntry } from '@/entities/score/types'
+import type { ParticipantResult, RankedEntry, RawExerciseInput } from '@/entities/score/types'
 import type { Participant } from '@/entities/participant/types'
 import type { CompetitionLevel } from '@/shared/types'
+import { ParticipantPenaltiesPanel } from './participant-penalties-panel'
 
 const levelLabels: Record<CompetitionLevel, string> = { 1: 'I', 2: 'II', 3: 'III' }
 
@@ -115,6 +117,19 @@ export function ResultsPage() {
     return grouped
   }, [scoreRecords, participants])
 
+  const effectiveInputsByParticipant = useMemo(() => {
+    const participantMap = new Map(participants.map((p) => [p.id, p]))
+    const map = new Map<string, RawExerciseInput[]>()
+    for (const record of scoreRecords) {
+      const participant = participantMap.get(record.participantId)
+      if (!participant) continue
+      map.set(record.participantId, applyDerivedInputs(record.inputs, participant.level))
+    }
+    return map
+  }, [scoreRecords, participants])
+
+  const getEffectiveInputs = (participantId: string) => effectiveInputsByParticipant.get(participantId)
+
   if (!competition) {
     return (
       <div className="container mx-auto max-w-4xl p-6">
@@ -143,16 +158,34 @@ export function ResultsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {rankedByLevel.map(({ level, entries }) => (
-            <Card key={level}>
-              <CardHeader>
-                <CardTitle>Уровень {levelLabels[level]}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResultsTable entries={entries} />
-              </CardContent>
-            </Card>
-          ))}
+          {rankedByLevel.map(({ level, entries }) => {
+            const exerciseOrder = competition.exerciseOrderByLevel?.[level]
+            return (
+              <Card key={level}>
+                <CardHeader>
+                  <CardTitle>Уровень {levelLabels[level]}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="summary" className="w-full">
+                    <TabsList className="mb-4 w-full max-w-md">
+                      <TabsTrigger value="summary">Сводная таблица</TabsTrigger>
+                      <TabsTrigger value="penalties">Штрафы по участникам</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="summary">
+                      <ResultsTable entries={entries} />
+                    </TabsContent>
+                    <TabsContent value="penalties" className="mt-0">
+                      <ParticipantPenaltiesPanel
+                        entries={entries}
+                        getEffectiveInputs={getEffectiveInputs}
+                        exerciseOrder={exerciseOrder ?? null}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
