@@ -142,7 +142,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'recall', label: 'Подзыв к ноге', maxScore: level === 1 ? 1 : 2 },
     ],
     penaltyTable: [
-      { id: 'posChangeStart', description: 'собака меняет положение на старте', points: 2 },
+      { id: 'posChangeStart', description: 'собака меняет положение на старте', points: 2, binary: true },
       { id: 'noExecute', description: 'собака не занимает требуемую позицию', points: 3 },
       {
         id: 'crawlToHandler',
@@ -336,8 +336,8 @@ export const exerciseRegistry: ExerciseDefinition[] = [
     group: 'jumps',
     levels: [1, 2, 3],
     getMaxScore: (level, params) => getJumpMaxScore('jumpWall', level, params),
-    scoringBreakdown: (level) => [
-      { id: 'jump', label: 'Барьер', maxScore: level === 1 ? 15 : 15, fixed: true },
+    scoringBreakdown: () => [
+      { id: 'jump', label: 'Барьер', maxScore: 15, fixed: true },
     ],
     penaltyTable: jumpPenalties(),
   },
@@ -419,11 +419,12 @@ export const exerciseRegistry: ExerciseDefinition[] = [
       { id: 'pursuit', label: 'атака (рассчитывается)', maxScore: 20, readonly: true },
     ],
     penaltyTable: [
-      { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10 },
+      { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start' },
       {
         id: 'earlyStartAfter',
         description: 'фальстарт после сигнала судьи, но до команды проводника',
         points: 5,
+        appliesTo: 'start',
       },
       { id: 'bites', description: 'собака делает хватку', points: 30, binary: true },
       {
@@ -510,7 +511,7 @@ export const exerciseRegistry: ExerciseDefinition[] = [
         points: 30,
         binary: true,
       },
-      { id: 'noGuard', description: 'собака не окарауливает в течение 5 сек.', points: 5 },
+      { id: 'noGuard', description: 'собака не окарауливает в течение 5 сек.', points: 5, binary: true },
       {
         id: 'falseAlert',
         description: 'собака совершает ложное обозначение, не обнаружив декоя',
@@ -598,8 +599,9 @@ export const exerciseRegistry: ExerciseDefinition[] = [
         id: 'noReturn',
         description: 'собака не возвращается к ноге в течение 10 с после подзыва',
         points: 5,
+        binary: true,
       },
-      { id: 'noGuard5s', description: 'собака не окарауливает в течение установленных 5 с', points: 5 },
+      { id: 'noGuard5s', description: 'собака не окарауливает в течение установленных 5 с', points: 5, binary: true },
       {
         id: 'returnsBeforeRecallAfterJudgeSignal',
         description:
@@ -743,7 +745,7 @@ function jumpPenalties() {
 
 function frontalAttackPenalties() {
   return [
-    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start', hint: 'Также снять 5 из ОВ' },
     {
       id: 'earlyStartAfter',
       description: 'фальстарт после сигнала судьи, но до команды проводника',
@@ -856,7 +858,7 @@ function frontalAttackPenalties() {
 
 function pursuitBitePenalties() {
   return [
-    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start', hint: 'Также снять 5 из ОВ' },
     {
       id: 'earlyStartAfter',
       description: 'фальстарт после сигнала судьи, но до команды проводника',

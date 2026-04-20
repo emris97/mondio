@@ -155,7 +155,6 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
               <Select
                 value={String(level)}
                 onValueChange={(v) => handleLevelChange(Number(v) as CompetitionLevel)}
-                items={{ '1': 'I (200 баллов)', '2': 'II (300 баллов)', '3': 'III (400 баллов)' }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -172,7 +171,6 @@ export function AddParticipantDialog({ open, onOpenChange, competitionId, nextOr
               <Select
                 value={recallMethod}
                 onValueChange={(v) => setRecallMethod(v as RecallMethod)}
-                items={{ voice: 'Голосом', whistle: 'Свистком' }}
               >
                 <SelectTrigger>
                   <SelectValue />

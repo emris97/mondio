@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, MinusIcon, PlusIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -186,8 +186,8 @@ type PenaltyGroupProps = {
 }
 
 function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpdate }: PenaltyGroupProps) {
-  const binaryRules = rules.filter((r) => r.binary)
-  const countRules = rules.filter((r) => !r.binary)
+  const binaryRules = rules.filter((r) => r.binary && getPenaltyPoints(r, level) > 0)
+  const countRules = rules.filter((r) => !r.binary && getPenaltyPoints(r, level) > 0)
 
   const renderRuleDescription = (rule: PenaltyRule) => {
     const pts = getPenaltyAmount(rule, level, maxScore)
@@ -239,7 +239,12 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
                   onCheckedChange={(checked) => onUpdate(rule.id, checked ? 1 : 0)}
                   className="shrink-0"
                 />
-                <span className="min-w-0 flex-1">{renderRuleDescription(rule)}</span>
+                <span className="min-w-0 flex-1">
+                  {renderRuleDescription(rule)}
+                  {rule.hint && (
+                    <span className="mt-0.5 block text-[11px] text-amber-600 dark:text-amber-400">{rule.hint}</span>
+                  )}
+                </span>
               </label>
             )
           })}
@@ -306,17 +311,6 @@ export function ExerciseForm({
   onCollapsibleOpenChange,
 }: Props) {
   const [resetOpen, setResetOpen] = useState(false)
-
-  useEffect(() => {
-    if (definition.id !== 'sendAway') return
-    const v = input.componentScores.total ?? 12
-    if (!isSendAwayBaseScore(v)) {
-      onChange({
-        ...input,
-        componentScores: { ...input.componentScores, total: 12 },
-      })
-    }
-  }, [definition.id, input, onChange])
 
   const breakdown = definition.scoringBreakdown(level)
   const maxScore = definition.getMaxScore(level, input.jumpParams)
@@ -449,10 +443,14 @@ export function ExerciseForm({
     )
   }
 
-  const getDefaultPhaseTab = (): string => {
-    const withPenalty = breakdown.find((c) => getPhasePenaltyTotal(c.id) > 0)
-    return withPenalty?.id ?? breakdown[0]?.id ?? 'phase'
-  }
+  const [userSelectedTab, setUserSelectedTab] = useState<string | null>(null)
+
+  const tabWithPenalty = breakdown.find((c) => getPhasePenaltyTotal(c.id) > 0)
+  const userTabHasPenalty = userSelectedTab ? getPhasePenaltyTotal(userSelectedTab) > 0 : false
+  const activePhaseTab =
+    userSelectedTab && (userTabHasPenalty || !tabWithPenalty)
+      ? userSelectedTab
+      : (tabWithPenalty?.id ?? breakdown[0]?.id ?? 'phase')
 
   const collapsibleProps =
     onCollapsibleOpenChange != null
@@ -486,7 +484,7 @@ export function ExerciseForm({
           <CardContent className="space-y-3">
         {hasPhasedPenalties ? (
           <>
-            <Tabs defaultValue={getDefaultPhaseTab()} className="gap-2">
+            <Tabs value={activePhaseTab} onValueChange={setUserSelectedTab} className="gap-2">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
                   const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
