@@ -186,8 +186,8 @@ type PenaltyGroupProps = {
 }
 
 function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpdate }: PenaltyGroupProps) {
-  const binaryRules = rules.filter((r) => r.binary)
-  const countRules = rules.filter((r) => !r.binary)
+  const binaryRules = rules.filter((r) => r.binary && getPenaltyPoints(r, level) > 0)
+  const countRules = rules.filter((r) => !r.binary && getPenaltyPoints(r, level) > 0)
 
   const renderRuleDescription = (rule: PenaltyRule) => {
     const pts = getPenaltyAmount(rule, level, maxScore)
