@@ -68,10 +68,11 @@ export function ResultsPage() {
   const { data: participants = [] } = useParticipantsByCompetition(id)
   const { data: scoreRecords = [] } = useScoresByCompetition(id)
 
-  const rankedByLevel = useMemo(() => {
+  const { grouped: rankedByLevel, effectiveInputsByParticipant } = useMemo(() => {
     const participantMap = new Map(participants.map((p) => [p.id, p]))
 
     const resultsByLevel = new Map<CompetitionLevel, ParticipantResult[]>()
+    const effectiveInputsMap = new Map<string, RawExerciseInput[]>()
 
     for (const record of scoreRecords) {
       const participant = participantMap.get(record.participantId)
@@ -80,6 +81,8 @@ export function ResultsPage() {
       const level = participant.level
 
       const effectiveInputs = applyDerivedInputs(record.inputs, level)
+      effectiveInputsMap.set(record.participantId, effectiveInputs)
+
       const scores = effectiveInputs
         .map((input) => {
           const def = getExerciseDefinition(input.exerciseId)
@@ -114,18 +117,7 @@ export function ResultsPage() {
       grouped.push({ level, entries: rankedEntries })
     }
 
-    return grouped
-  }, [scoreRecords, participants])
-
-  const effectiveInputsByParticipant = useMemo(() => {
-    const participantMap = new Map(participants.map((p) => [p.id, p]))
-    const map = new Map<string, RawExerciseInput[]>()
-    for (const record of scoreRecords) {
-      const participant = participantMap.get(record.participantId)
-      if (!participant) continue
-      map.set(record.participantId, applyDerivedInputs(record.inputs, participant.level))
-    }
-    return map
+    return { grouped, effectiveInputsByParticipant: effectiveInputsMap }
   }, [scoreRecords, participants])
 
   const getEffectiveInputs = (participantId: string) => effectiveInputsByParticipant.get(participantId)
