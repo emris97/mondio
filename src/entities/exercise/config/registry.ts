@@ -731,6 +731,13 @@ function jumpPenalties() {
       points: 2,
       binary: true,
     },
+    {
+      id: 'illegalCommand',
+      description: 'любая неправильно поданная команда',
+      points: 0,
+      voidExercise: true,
+      binary: true,
+    },
   ]
 }
 

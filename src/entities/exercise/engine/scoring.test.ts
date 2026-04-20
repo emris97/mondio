@@ -175,6 +175,21 @@ describe('calculateExerciseScore', () => {
     expect(result.finalScore).toBe(15)
   })
 
+  it('прыжки: «неправильно поданная команда» обнуляет упражнение (штраф = maxScore)', () => {
+    const def = getExerciseDefinition('jumpWall')!
+    const input = {
+      exerciseId: 'jumpWall' as const,
+      componentScores: { jump: 15 },
+      penalties: [{ penaltyId: 'illegalCommand' as const, count: 1 }],
+      ovPenalty: 0,
+      jumpParams: { wallHeight: 2.3 as const },
+    }
+    const result = calculateExerciseScore(input, def, 3)
+    expect(result.maxScore).toBe(15)
+    expect(result.penaltyTotal).toBe(15)
+    expect(result.finalScore).toBe(0)
+  })
+
   it('fixed-компонент использует maxScore независимо от входных данных', () => {
     const def = getExerciseDefinition('heeling')!
     const result = calculateExerciseScore(

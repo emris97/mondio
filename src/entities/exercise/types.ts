@@ -29,12 +29,27 @@ export type PenaltyRule = {
   unitLabel?: string
   /** Штраф бинарный (обнуляет или фиксированно снимает) — UI рендерит checkbox */
   binary?: boolean
+  /**
+   * Потеря всех баллов за упражнение: при расчёте величина штрафа = `maxScore` упражнения.
+   * Поле `points` не используется (можно 0).
+   */
+  voidExercise?: boolean
   /** К какому компоненту (фазе) привязан штраф (id из scoringBreakdown). Если не указано — вычитается из общей суммы */
   appliesTo?: string
 }
 
 export function getPenaltyPoints(rule: PenaltyRule, level: CompetitionLevel): number {
   return rule.pointsByLevel?.[level] ?? rule.points
+}
+
+/** Фактическое списание по правилу с учётом максимума упражнения (для `voidExercise`). */
+export function getPenaltyAmount(
+  rule: PenaltyRule,
+  level: CompetitionLevel,
+  maxExerciseScore: number,
+): number {
+  if (rule.voidExercise) return maxExerciseScore
+  return getPenaltyPoints(rule, level)
 }
 
 export function getPenaltyDescription(rule: PenaltyRule, level: CompetitionLevel): string {

@@ -17,7 +17,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { getPenaltyDescription, getPenaltyPoints, type ExerciseDefinition, type PenaltyRule } from '@/entities/exercise/types'
+import {
+  getPenaltyAmount,
+  getPenaltyDescription,
+  getPenaltyPoints,
+  type ExerciseDefinition,
+  type PenaltyRule,
+} from '@/entities/exercise/types'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { CompetitionLevel } from '@/shared/types'
 import { calculateExerciseScore } from '@/entities/exercise/engine'
@@ -184,7 +190,7 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
   const countRules = rules.filter((r) => !r.binary)
 
   const renderRuleDescription = (rule: PenaltyRule) => {
-    const pts = getPenaltyPoints(rule, level)
+    const pts = getPenaltyAmount(rule, level, maxScore)
     return (
       <span className="whitespace-pre-line text-xs text-muted-foreground leading-snug">
         {getPenaltyDescription(rule, level)}
@@ -204,10 +210,11 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
     return `Штраф −${pts} за каждое нарушение`
   }
 
+  const ruleZeroesExercise = (rule: PenaltyRule) =>
+    Boolean(rule.binary && (rule.voidExercise || getPenaltyPoints(rule, level) >= maxScore))
+
   const isDisabled = (rule: PenaltyRule) => {
-    const pts = getPenaltyPoints(rule, level)
-    const isZeroing = rule.binary && pts >= maxScore
-    return zeroedBy && !isZeroing
+    return zeroedBy && !ruleZeroesExercise(rule)
   }
 
   return (
@@ -243,7 +250,7 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
         <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
           {countRules.map((rule) => {
             const count = getPenaltyCount(rule.id)
-            const pts = getPenaltyPoints(rule, level)
+            const pts = getPenaltyAmount(rule, level, maxScore)
             const lineTotal = pts * count
             const disabled = isDisabled(rule)
             return (
@@ -333,17 +340,20 @@ export function ExerciseForm({
     return input.penalties.reduce((sum, p) => {
       const rule = getPenaltyRule(p.penaltyId)
       if (!rule || rule.appliesTo !== componentId) return sum
-      return sum + getPenaltyPoints(rule, level) * p.count
+      return sum + getPenaltyAmount(rule, level, maxScore) * p.count
     }, 0)
   }
 
   const isZeroingPenalty = (ruleId: string) => {
     const rule = definition.penaltyTable.find((r) => r.id === ruleId)
-    return rule?.binary && getPenaltyPoints(rule, level) >= maxScore
+    if (!rule) return false
+    return Boolean(rule.binary && (rule.voidExercise || getPenaltyPoints(rule, level) >= maxScore))
   }
 
   const zeroedBy = definition.penaltyTable.find(
-    (rule) => rule.binary && getPenaltyPoints(rule, level) >= maxScore && getPenaltyCount(rule.id) > 0,
+    (rule) =>
+      getPenaltyCount(rule.id) > 0 &&
+      Boolean(rule.binary && (rule.voidExercise || getPenaltyPoints(rule, level) >= maxScore)),
   )
 
   const updateComponent = (componentId: string, value: number) => {

@@ -1,5 +1,5 @@
 import type { CompetitionLevel, ExerciseGroup, ExerciseId } from '@/shared/types'
-import { getPenaltyPoints, type ExerciseDefinition, type JumpParams } from '../types'
+import { getPenaltyAmount, type ExerciseDefinition, type JumpParams } from '../types'
 import type {
   RawExerciseInput,
   ExerciseScore,
@@ -21,12 +21,13 @@ function calculateComponentRemainders(
   level: CompetitionLevel,
 ): Map<string, number> {
   const breakdown = definition.scoringBreakdown(level)
+  const maxScore = definition.getMaxScore(level, input.jumpParams)
 
   const scopedPenaltySums = new Map<string, number>()
   for (const entry of input.penalties) {
     const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
     if (!rule || !rule.appliesTo) continue
-    const amount = getPenaltyPoints(rule, level) * entry.count
+    const amount = getPenaltyAmount(rule, level, maxScore) * entry.count
     scopedPenaltySums.set(rule.appliesTo, (scopedPenaltySums.get(rule.appliesTo) ?? 0) + amount)
   }
 
@@ -53,7 +54,7 @@ export function calculateExerciseScore(
   for (const entry of input.penalties) {
     const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
     if (!rule) continue
-    const amount = getPenaltyPoints(rule, level) * entry.count
+    const amount = getPenaltyAmount(rule, level, maxScore) * entry.count
     if (rule.appliesTo) {
       scopedPenaltySums.set(rule.appliesTo, (scopedPenaltySums.get(rule.appliesTo) ?? 0) + amount)
     } else {

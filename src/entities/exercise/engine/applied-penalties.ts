@@ -1,7 +1,7 @@
 import type { CompetitionLevel } from '@/shared/types'
 import type { RawExerciseInput } from '@/entities/score/types'
 import type { ExerciseDefinition } from '../types'
-import { getPenaltyDescription, getPenaltyPoints } from '../types'
+import { getPenaltyAmount, getPenaltyDescription } from '../types'
 import { calculateExerciseScore } from './scoring'
 
 export type AppliedPenaltyLine = {
@@ -33,13 +33,14 @@ export function describeExercisePenalties(
   level: CompetitionLevel,
 ): ExercisePenaltiesDescription {
   const scored = calculateExerciseScore(input, definition, level)
+  const maxScore = definition.getMaxScore(level, input.jumpParams)
 
   const lines: AppliedPenaltyLine[] = []
   for (const entry of input.penalties) {
     if (entry.count <= 0) continue
     const rule = definition.penaltyTable.find((p) => p.id === entry.penaltyId)
     if (!rule) continue
-    const pointsPerUnit = getPenaltyPoints(rule, level)
+    const pointsPerUnit = getPenaltyAmount(rule, level, maxScore)
     const deduction = pointsPerUnit * entry.count
     lines.push({
       penaltyId: entry.penaltyId,
