@@ -239,7 +239,12 @@ function PenaltyGroup({ rules, level, maxScore, zeroedBy, getPenaltyCount, onUpd
                   onCheckedChange={(checked) => onUpdate(rule.id, checked ? 1 : 0)}
                   className="shrink-0"
                 />
-                <span className="min-w-0 flex-1">{renderRuleDescription(rule)}</span>
+                <span className="min-w-0 flex-1">
+                  {renderRuleDescription(rule)}
+                  {rule.hint && (
+                    <span className="mt-0.5 block text-[11px] text-amber-600 dark:text-amber-400">{rule.hint}</span>
+                  )}
+                </span>
               </label>
             )
           })}

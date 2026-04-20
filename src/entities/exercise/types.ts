@@ -36,6 +36,8 @@ export type PenaltyRule = {
   voidExercise?: boolean
   /** К какому компоненту (фазе) привязан штраф (id из scoringBreakdown). Если не указано — вычитается из общей суммы */
   appliesTo?: string
+  /** Подсказка судье, отображается рядом со штрафом */
+  hint?: string
 }
 
 export function getPenaltyPoints(rule: PenaltyRule, level: CompetitionLevel): number {

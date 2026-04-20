@@ -745,7 +745,7 @@ function jumpPenalties() {
 
 function frontalAttackPenalties() {
   return [
-    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start', hint: 'Также снять 5 из ОВ' },
     {
       id: 'earlyStartAfter',
       description: 'фальстарт после сигнала судьи, но до команды проводника',
@@ -858,7 +858,7 @@ function frontalAttackPenalties() {
 
 function pursuitBitePenalties() {
   return [
-    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start' },
+    { id: 'earlyStartBefore', description: 'фальстарт до сигнала судьи', points: 10, appliesTo: 'start', hint: 'Также снять 5 из ОВ' },
     {
       id: 'earlyStartAfter',
       description: 'фальстарт после сигнала судьи, но до команды проводника',
