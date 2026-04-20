@@ -169,6 +169,9 @@ export function calculateCompetitionTotal(
 }
 
 /**
+ * @internal Используется только в тестах для верификации примеров из правил.
+ * Production-расчёт прерванной атаки идёт через applyDerivedInputs.
+ *
  * Прерванная атака (только III):
  * Баллы за атаку = (frontalStickBite + frontalObjectsBite) / 3
  * Итого = biteComponent + startScore - penalties
