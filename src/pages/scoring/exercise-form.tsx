@@ -443,10 +443,14 @@ export function ExerciseForm({
     )
   }
 
-  const getDefaultPhaseTab = (): string => {
-    const withPenalty = breakdown.find((c) => getPhasePenaltyTotal(c.id) > 0)
-    return withPenalty?.id ?? breakdown[0]?.id ?? 'phase'
-  }
+  const [userSelectedTab, setUserSelectedTab] = useState<string | null>(null)
+
+  const tabWithPenalty = breakdown.find((c) => getPhasePenaltyTotal(c.id) > 0)
+  const userTabHasPenalty = userSelectedTab ? getPhasePenaltyTotal(userSelectedTab) > 0 : false
+  const activePhaseTab =
+    userSelectedTab && (userTabHasPenalty || !tabWithPenalty)
+      ? userSelectedTab
+      : (tabWithPenalty?.id ?? breakdown[0]?.id ?? 'phase')
 
   const collapsibleProps =
     onCollapsibleOpenChange != null
@@ -480,7 +484,7 @@ export function ExerciseForm({
           <CardContent className="space-y-3">
         {hasPhasedPenalties ? (
           <>
-            <Tabs defaultValue={getDefaultPhaseTab()} className="gap-2">
+            <Tabs value={activePhaseTab} onValueChange={setUserSelectedTab} className="gap-2">
               <TabsList className="w-full" variant="line">
                 {breakdown.map((comp) => {
                   const base = comp.fixed ? comp.maxScore : (input.componentScores[comp.id] ?? comp.maxScore)
