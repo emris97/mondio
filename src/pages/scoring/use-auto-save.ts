@@ -6,6 +6,19 @@ import type { CompetitionLevel, ExerciseId } from '@/shared/types'
 import type { JumpParams } from '@/entities/exercise/types'
 import { createEmptyInputsForLevel, mergeJumpParams } from '@/entities/exercise/engine'
 
+const SEND_AWAY_VALID_SCORES = [12, 8, 4] as const
+
+function normalizeSendAwayInput(input: RawExerciseInput): RawExerciseInput {
+  if (input.exerciseId !== 'sendAway') return input
+  const v = input.componentScores.total ?? 12
+  if ((SEND_AWAY_VALID_SCORES as readonly number[]).includes(v)) return input
+  return { ...input, componentScores: { ...input.componentScores, total: 12 } }
+}
+
+function normalizeInputs(inputs: RawExerciseInput[]): RawExerciseInput[] {
+  return inputs.map(normalizeSendAwayInput)
+}
+
 type UseAutoSaveParams = {
   level: CompetitionLevel
   jumpParams: JumpParams
@@ -39,12 +52,12 @@ export function useAutoSave({
   if (isNewRecord) {
     setLoadedRecordId(recordId)
     if (localInputs === null) {
-      setLocalInputs(scoreRecord!.inputs)
+      setLocalInputs(normalizeInputs(scoreRecord!.inputs))
     }
   }
 
   const rawInputs =
-    localInputs ?? scoreRecord?.inputs ?? createEmptyInputsForLevel(level, jumpParams, exerciseOrder)
+    localInputs ?? normalizeInputs(scoreRecord?.inputs ?? createEmptyInputsForLevel(level, jumpParams, exerciseOrder))
   const inputs = useMemo(() => mergeJumpParams(rawInputs, jumpParams), [rawInputs, jumpParams])
 
   const scheduleAutoSave = useCallback(

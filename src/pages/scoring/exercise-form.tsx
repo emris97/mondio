@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, MinusIcon, PlusIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -311,17 +311,6 @@ export function ExerciseForm({
   onCollapsibleOpenChange,
 }: Props) {
   const [resetOpen, setResetOpen] = useState(false)
-
-  useEffect(() => {
-    if (definition.id !== 'sendAway') return
-    const v = input.componentScores.total ?? 12
-    if (!isSendAwayBaseScore(v)) {
-      onChange({
-        ...input,
-        componentScores: { ...input.componentScores, total: 12 },
-      })
-    }
-  }, [definition.id, input, onChange])
 
   const breakdown = definition.scoringBreakdown(level)
   const maxScore = definition.getMaxScore(level, input.jumpParams)
